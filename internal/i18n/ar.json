@@ -214,5 +214,6 @@
   "when elevating, hide the new console window": "إخفاء نافذة الطرفية عند طلب صلاحيات المسؤول",
   "where status/off marker files live": "مكان حفظ ملفات الحالة وعلامات الإيقاف",
   "wintun.dll not found next to %s": "لم يُعثر على wintun.dll بجانب %s",
-  "write output to this file instead of the console": "كتابة المخرجات في هذا الملف بدلًا من الطرفية"
+  "write output to this file instead of the console": "كتابة المخرجات في هذا الملف بدلًا من الطرفية",
+  "Saved allowances must be loaded before relaying.": "يجب تحميل حصص البيانات المحفوظة قبل تمرير البيانات."
 }

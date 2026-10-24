@@ -14,7 +14,7 @@ for name in required:
     assert (folder/name).stat().st_size > 100_000, f'Missing or empty release asset: {name}'
 for extension in ('*.deb','*.rpm','*.apk','*.pkg.tar.zst'):
     # .apk includes Android, so count the Alpine architecture packages explicitly below.
-    assert len(list(folder.glob(extension))) >= (8 if extension == '*.deb' else 9), extension
+    assert len(list(folder.glob(extension))) >= (8 if extension == '*.deb' else 10 if extension == '*.apk' else 9), extension
 for name in required:
     alias = name.replace(f'-{version}', '')
     if '-linux-armv7.' in alias: alias = alias.replace('-armv7.','-armv7l.')

@@ -214,5 +214,6 @@
   "when elevating, hide the new console window": "when elevating, hide the new console window",
   "where status/off marker files live": "where status/off marker files live",
   "wintun.dll not found next to %s": "wintun.dll not found next to %s",
-  "write output to this file instead of the console": "write output to this file instead of the console"
+  "write output to this file instead of the console": "write output to this file instead of the console",
+  "Saved allowances must be loaded before relaying.": "Saved allowances must be loaded before relaying."
 }
