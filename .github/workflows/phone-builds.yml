@@ -16,7 +16,11 @@ jobs:
         with:
           go-version-file: mobile/android/golib/go.mod
           cache-dependency-path: mobile/android/golib/go.sum
+      - name: Local IPv6 test address
+        run: sudo ip -6 addr add 2001:db8::1/128 dev lo
       - run: go vet ./... && go test -race -timeout 5m ./...
+        env:
+          NETMERGE_TEST_IP6: '2001:db8::1' 
         working-directory: mobile/android/golib
       - run: python3 scripts/check-mobile-catalogs.py
   android:

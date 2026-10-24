@@ -3,7 +3,30 @@
 What changed in each release. Each version's section becomes its GitHub release notes, so add the
 entry here before pushing a version tag.
 
-## [Unreleased]
+## [0.4.0] - 2026-10-24
+
+Rebranded for [Iraq PC Community on Facebook](https://www.facebook.com/groups/1088749137864406/).
+MIT licensing and original attribution are preserved. This release is published only on the community fork.
+
+### Phone builds
+- Android 8+: community-signed APK with per-interface speed caps, persistent data allowances,
+  GB session totals, manual reset confirmation, and English/Arabic UI. Separate application ID
+  and signing key from upstream. Wi-Fi/cellular selection follows Android availability.
+- iOS 16+: **experimental unsigned arm64 IPA**, containing a SwiftUI app and packet-tunnel
+  extension using the shared Go relay, limits, persistence, pause and Arabic UI. Signing and
+  suitable Network Extension/App Group provisioning are needed before installation and use.
+  See [the phone guide](mobile/README.md). No physical iPhone or Android dual-network tests
+  were available; the iOS port is not claimed to be device validated.
+- Linux `.apk` files are Alpine packages; the Android download is `net-merge-0.4.0-android.apk`.
+
+### Downloads and validation
+- Windows installer and portable ZIP; Linux tarballs, DEB, RPM, Alpine and Arch packages across
+  the existing CPU matrix; macOS universal tarball; Android APK; unsigned iOS IPA.
+- Release assets are staged before publication, with SHA-256 checksums and retained licenses.
+- Desktop cross-platform checks and Windows network/UI smoke tests pass. Mobile engine tests
+  cover accounting, small UDP packets, concurrency, persistence and packet bridging. The
+  latest one-second checkpoint and buffered traffic can affect the exact data cutoff.
+
 
 ### Added
 - **Community fork:** manually reset data allowances per adapter, relayed session usage in GB for each connection and the total, a native Windows limits window and expanded hover panel, and complete Arabic/English app and installer text with RTL layouts. Saved allowances close exhausted TCP/UDP links and cannot be bypassed by automatic pause.

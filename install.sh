@@ -1,22 +1,17 @@
 #!/bin/sh
 # Installs net-merge on macOS or Linux, the easiest way the machine allows:
 #
-#   curl -fsSL https://raw.githubusercontent.com/rohit267/net-merge/main/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/DodoBird-debian/net-merge/main/install.sh | sh
 #
-# Linux: the system's package manager (apt, dnf, yum, zypper, apk, pacman) from net-merge's signed
-# repositories, so it updates with everything else; otherwise Homebrew; otherwise the release tarball.
-# macOS: Homebrew if it is installed, otherwise the release tarball.
-# Then it starts the tray. NET_MERGE_METHOD=tarball skips the package managers, NET_MERGE_NO_START=1
-# leaves the tray off.
+# Installs the community fork from GitHub release tarballs on Linux and macOS.
+# NET_MERGE_NO_START=1 leaves the tray off.
 #
 # Uninstall, however it was installed:
 #
-#   curl -fsSL https://raw.githubusercontent.com/rohit267/net-merge/main/install.sh | sh -s -- uninstall
+#   curl -fsSL https://raw.githubusercontent.com/DodoBird-debian/net-merge/main/install.sh | sh -s -- uninstall
 set -eu
 
-REPO=https://github.com/rohit267/net-merge
-BASE=https://pkg.net-merge.org
-FPR=0168C7AB77721656904811AE904F61E7F4F1C2A1
+REPO=https://github.com/DodoBird-debian/net-merge
 
 say() { printf '\033[1;32m==>\033[0m %s\n' "$*"; }
 die() { printf 'net-merge install: %s\n' "$*" >&2; exit 1; }
@@ -57,60 +52,6 @@ tarball() {
             say "setcap not found: install libcap, then run: sudo setcap cap_net_admin,cap_net_raw+ep /usr/local/bin/net-merge"
         fi
     fi
-}
-
-# ---- Homebrew (as the user: brew refuses root)
-homebrew() {
-    say "Installing with Homebrew"
-    brew install rohit267/tap/net-merge
-    bin=$(brew --prefix)/bin/net-merge
-    if [ "$(uname -s)" = Darwin ]; then
-        $SUDO "$bin" install
-    else
-        $SUDO setcap cap_net_admin,cap_net_raw+ep "$(readlink -f "$bin")"
-    fi
-}
-
-# ---- the system package manager, from the signed repositories
-apt_install() {
-    say "Installing with apt"
-    fetch "$BASE/apt/key.gpg" > "$tmp/key.gpg"
-    $SUDO install -D -m 644 "$tmp/key.gpg" /usr/share/keyrings/net-merge.gpg
-    echo "deb [signed-by=/usr/share/keyrings/net-merge.gpg] $BASE/apt stable main" | $SUDO tee /etc/apt/sources.list.d/net-merge.list >/dev/null
-    $SUDO apt-get update -qq
-    $SUDO env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq net-merge
-}
-rpm_install() { # rpm_install dnf|yum
-    say "Installing with $1"
-    fetch "$BASE/rpm/net-merge.repo" > "$tmp/net-merge.repo"
-    $SUDO install -m 644 "$tmp/net-merge.repo" /etc/yum.repos.d/net-merge.repo
-    $SUDO "$1" install -y net-merge
-}
-zypper_install() {
-    say "Installing with zypper"
-    $SUDO zypper --non-interactive lr net-merge >/dev/null 2>&1 || $SUDO zypper --non-interactive addrepo "$BASE/rpm/net-merge.repo"
-    $SUDO zypper --non-interactive --gpg-auto-import-keys refresh net-merge
-    $SUDO zypper --non-interactive install net-merge
-}
-apk_install() {
-    say "Installing with apk"
-    fetch "$BASE/apk/net-merge.rsa.pub" > "$tmp/net-merge.rsa.pub"
-    $SUDO install -m 644 "$tmp/net-merge.rsa.pub" /etc/apk/keys/net-merge.rsa.pub
-    grep -qx "$BASE/apk" /etc/apk/repositories || echo "$BASE/apk" | $SUDO tee -a /etc/apk/repositories >/dev/null
-    $SUDO apk add net-merge
-}
-pacman_install() {
-    say "Installing with pacman"
-    # a fresh system may have no local pacman key yet, which signing ours needs
-    $SUDO pacman-key --list-secret-keys 2>/dev/null | grep -q '^sec' || $SUDO pacman-key --init
-    if ! $SUDO pacman-key --list-keys "$FPR" >/dev/null 2>&1; then
-        fetch "$BASE/apt/key.asc" > "$tmp/key.asc"
-        $SUDO pacman-key --add "$tmp/key.asc"
-        $SUDO pacman-key --lsign-key "$FPR"
-    fi
-    grep -q '^\[net-merge\]' /etc/pacman.conf ||
-        printf '\n[net-merge]\nSigLevel = Required\nServer = %s/arch/$arch\n' "$BASE" | $SUDO tee -a /etc/pacman.conf >/dev/null
-    $SUDO pacman -Sy --needed --noconfirm net-merge
 }
 
 # ---- uninstall: stop it, then remove it the way it was installed, with the repository it came from
@@ -178,28 +119,12 @@ case ${1:-} in
     *) die "unknown option $1 (use: uninstall)" ;;
 esac
 
-# ---- pick the way
-method=${NET_MERGE_METHOD:-auto}
-if [ "$(uname -s)" = Darwin ]; then
-    # a running tray holds the old binary: stop it before replacing it
-    pgrep -qf 'net-merge tray' && { net-merge quit 2>/dev/null || true; sleep 2; }
-    $SUDO mkdir -p /usr/local/bin   # where `net-merge install` puts its root-owned copy
-    if [ "$method" = auto ] && have brew && [ "$(id -u)" != 0 ]; then homebrew; else tarball; fi
-elif [ "$(uname -s)" = Linux ]; then
-    if [ -f /etc/NIXOS ]; then
-        die "on NixOS use the module instead: $REPO#nixos"
-    elif [ "$method" != auto ]; then tarball
-    elif have apt-get && have dpkg && case $(dpkg --print-architecture) in amd64|arm64|armhf|i386|loong64|ppc64el|riscv64|s390x) true ;; *) false ;; esac; then apt_install
-    elif have dnf; then rpm_install dnf
-    elif have yum; then rpm_install yum
-    elif have zypper; then zypper_install
-    elif have apk; then apk_install
-    elif have pacman; then pacman_install
-    elif have brew && [ "$(id -u)" != 0 ]; then homebrew
-    else tarball; fi
-else
-    die "this script is for macOS and Linux; on Windows run in PowerShell: irm https://raw.githubusercontent.com/rohit267/net-merge/main/install.ps1 | iex"
-fi
+# This fork installs its own release tarballs. It does not configure upstream repositories.
+case $(uname -s) in
+    Darwin) net-merge quit 2>/dev/null || true; $SUDO mkdir -p /usr/local/bin; tarball ;;
+    Linux) tarball ;;
+    *) die "this script is for macOS and Linux" ;;
+esac
 
 have net-merge || PATH=$PATH:/usr/local/bin
 say "Installed $(net-merge version)"

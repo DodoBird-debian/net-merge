@@ -20,7 +20,9 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
             if let error = error { completionHandler(error); return }
             do {
                 guard let dir = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier:appGroup) else { throw NSError(domain:"net-merge",code:1,userInfo:[NSLocalizedDescriptionKey:L("error")]) }
-                self.engine = try NetmergeNewPacketCore(dir.path, language)
+                var nativeError: NSError?
+                self.engine = NetmergeNewPacketCore(dir.path, language, &nativeError)
+                if let error = nativeError { throw error }
                 guard let engine = self.engine else { throw NSError(domain:"net-merge",code:2) }
                 self.readPackets()
                 self.output.async { [weak self] in
@@ -47,16 +49,18 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
         var diagnostic = ""
         do {
             let msg = try JSONSerialization.jsonObject(with:messageData) as? [String:String] ?? [:]
+            var nativeError: NSError?
             switch msg["action"] {
-            case "limits": try NetmergeSetConnectionLimits(msg["id"] ?? "",msg["speed"] ?? "",msg["quota"] ?? "")
-            case "reset": try NetmergeResetQuota(msg["id"] ?? "")
+            case "limits": _ = NetmergeSetConnectionLimits(msg["id"] ?? "",msg["speed"] ?? "",msg["quota"] ?? "", &nativeError)
+            case "reset": _ = NetmergeResetQuota(msg["id"] ?? "", &nativeError)
             case "pause": paused = msg["paused"] == "true"; NetmergePause(paused)
-            case "language": _ = try NetmergeConfigure(FileManager.default.containerURL(forSecurityApplicationGroupIdentifier:appGroup)!.path,language)
+            case "language": _ = NetmergeConfigure(FileManager.default.containerURL(forSecurityApplicationGroupIdentifier:appGroup)!.path,language, &nativeError)
             default: break
             }
+            if let error = nativeError { throw error }
         } catch { diagnostic = error.localizedDescription }
-        if diagnostic.isEmpty { diagnostic = NetmergeStorageError() }
-        let stats = (try? JSONSerialization.jsonObject(with:Data(NetmergeStats().utf8))) ?? []
+        if diagnostic.isEmpty { diagnostic = NetmergeStorageError() ?? "" }
+        let stats = (try? JSONSerialization.jsonObject(with:Data((NetmergeStats() ?? "[]").utf8))) ?? []
         completionHandler?(try? JSONSerialization.data(withJSONObject:["stats":stats,"error":diagnostic,"paused":paused]))
     }
 }

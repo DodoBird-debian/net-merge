@@ -12,7 +12,7 @@
 
 [الدليل باللغة العربية](README.ar.md)
 
-This fork adds **per-connection data allowances**, **session usage in GB**, and **Arabic/English support**. Existing per-connection speed limits remain available. Preview builds are attached to the fork's **community validation** workflow; install this fork's build to use these additions. The upstream installation commands further below install the original project.
+This fork adds **per-connection data allowances**, **session usage in GB**, and **Arabic/English support**. Existing per-connection speed limits remain available. Downloads for Windows, Linux, macOS, Android and unsigned experimental iOS are on [this fork’s Releases page](https://github.com/DodoBird-debian/net-merge/releases). See the [phone build guide](mobile/README.md) for Android and iOS requirements.
 
 - Open **Connection limits…** from the tray to set a custom speed in Mbps and an allowance in decimal GB for each adapter. Upload and download share one data allowance; the speed cap applies separately to each direction.
 - **Used since start** in the menu and Windows hover panel counts only traffic relayed through net-merge. Every tracked connection and the combined total are shown. Session usage survives pause/resume and reconnects, and resets when the process restarts.
@@ -45,7 +45,7 @@ On macOS, unprivileged SOCKS mode keeps its state in the user's cache under `net
 
 <p align="center">
   <a href="https://net-merge.org">Website</a> ·
-  <a href="https://github.com/rohit267/net-merge/releases/latest">Download</a> ·
+  <a href="https://github.com/DodoBird-debian/net-merge/releases/latest">Download</a> ·
   <a href="#android">Android</a> ·
   <a href="#install">Install</a> ·
   <a href="#add-a-second-connection">Add a second connection</a> ·
@@ -54,10 +54,10 @@ On macOS, unprivileged SOCKS mode keeps its state in the user's cache under `net
 </p>
 
 <p align="center">
-  <a href="https://github.com/rohit267/net-merge/actions/workflows/ci.yml"><img src="https://github.com/rohit267/net-merge/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/rohit267/net-merge/releases"><img src="https://img.shields.io/github/v/release/rohit267/net-merge" alt="Latest release"></a>
-  <a href="https://github.com/rohit267/net-merge/releases"><img src="https://img.shields.io/github/downloads/rohit267/net-merge/total" alt="Downloads"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/rohit267/net-merge" alt="MIT license"></a>
+  <a href="https://github.com/DodoBird-debian/net-merge/actions/workflows/ci.yml"><img src="https://github.com/DodoBird-debian/net-merge/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/DodoBird-debian/net-merge/releases"><img src="https://img.shields.io/github/v/release/DodoBird-debian/net-merge" alt="Latest release"></a>
+  <a href="https://github.com/DodoBird-debian/net-merge/releases"><img src="https://img.shields.io/github/downloads/DodoBird-debian/net-merge/total" alt="Downloads"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/DodoBird-debian/net-merge" alt="MIT license"></a>
   <img src="https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Android-blue" alt="Windows, macOS, Linux and Android">
   <a href="https://buymeacoffee.com/rohit267"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-rohit267-FFDD00?logo=buymeacoffee&logoColor=black" alt="Buy me a coffee"></a>
   <a href="https://paypal.me/champdev"><img src="https://img.shields.io/badge/Donate-PayPal-00457C?logo=paypal&logoColor=white" alt="Donate with PayPal"></a>
@@ -111,19 +111,21 @@ spread over all your links.
 
 ## Install
 
+Use the community release downloads above. The community `install.sh` uses this fork’s release tarballs; upstream package repositories and Homebrew instructions below refer to the original project.
+
 **macOS and Linux**: paste this into a terminal.
 
 ```
-curl -fsSL https://raw.githubusercontent.com/rohit267/net-merge/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/DodoBird-debian/net-merge/main/install.sh | sh
 ```
 
 **Windows**: paste this into PowerShell.
 
 ```
-irm https://raw.githubusercontent.com/rohit267/net-merge/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/DodoBird-debian/net-merge/main/install.ps1 | iex
 ```
 
-Antivirus blocked it? Download [net-merge-setup.exe](https://github.com/rohit267/net-merge/releases/latest/download/net-merge-setup.exe)
+Antivirus blocked it? Download [net-merge-setup.exe](https://github.com/DodoBird-debian/net-merge/releases/latest/download/net-merge-setup.exe)
 and double-click it instead.
 
 That's it: net-merge is installed and its icon appears in the menu bar or tray. On Linux the script
@@ -149,7 +151,7 @@ brew install rohit267/tap/net-merge && sudo "$(brew --prefix)/bin/net-merge" ins
 **macOS without Homebrew**:
 
 ```
-curl -fsSL https://github.com/rohit267/net-merge/releases/latest/download/net-merge-macos-universal.tar.gz | tar -xz -C /tmp net-merge && sudo /tmp/net-merge install && net-merge tray
+curl -fsSL https://github.com/DodoBird-debian/net-merge/releases/latest/download/net-merge-macos-universal.tar.gz | tar -xz -C /tmp net-merge && sudo /tmp/net-merge install && net-merge tray
 ```
 
 **Debian, Ubuntu, Linux Mint, Pop!_OS, Raspberry Pi OS** (apt):
@@ -196,12 +198,12 @@ brew install rohit267/tap/net-merge && sudo setcap cap_net_admin,cap_net_raw+ep 
 **Any other Linux** (any CPU):
 
 ```
-curl -fsSL https://github.com/rohit267/net-merge/releases/latest/download/net-merge-linux-$(uname -m).tar.gz | tar -xz -C /tmp net-merge && sudo install -m 755 /tmp/net-merge /usr/local/bin/ && sudo setcap cap_net_admin,cap_net_raw+ep /usr/local/bin/net-merge
+curl -fsSL https://github.com/DodoBird-debian/net-merge/releases/latest/download/net-merge-linux-$(uname -m).tar.gz | tar -xz -C /tmp net-merge && sudo install -m 755 /tmp/net-merge /usr/local/bin/ && sudo setcap cap_net_admin,cap_net_raw+ep /usr/local/bin/net-merge
 ```
 
-**Windows by hand**: download [net-merge-setup.exe](https://github.com/rohit267/net-merge/releases/latest/download/net-merge-setup.exe)
+**Windows by hand**: download [net-merge-setup.exe](https://github.com/DodoBird-debian/net-merge/releases/latest/download/net-merge-setup.exe)
 and run it. Windows may warn because the app is not signed yet: click *More info*, then *Run anyway*.
-There is also a [portable zip](https://github.com/rohit267/net-merge/releases/latest/download/net-merge-portable.zip).
+There is also a [portable zip](https://github.com/DodoBird-debian/net-merge/releases/latest/download/net-merge-portable.zip).
 
 Then start it with `net-merge tray` (Linux, macOS) or from the Start menu (Windows).
 </details>
@@ -240,7 +242,7 @@ It needs Android 8.0 or newer.
   backups and download managers. One single download stays on one network, like on a computer.
 - **Mobile data stays on** while net-merge runs, so keep an eye on your data plan.
 - **One VPN at a time:** Android lets only one VPN app run, so net-merge can't run next to another VPN.
-- **Problems?** [Open an issue](https://github.com/rohit267/net-merge/issues/new/choose) and pick *Android*.
+- **Problems?** [Open an issue](https://github.com/DodoBird-debian/net-merge/issues/new/choose) and pick *Android*.
   The code is in [net-merge/android](https://github.com/net-merge/android).
 
 ## Uninstall
@@ -249,7 +251,7 @@ It needs Android 8.0 or newer.
 installed (Homebrew, apt, dnf, zypper, apk, pacman or the download), with its repository and key.
 
 ```
-curl -fsSL https://raw.githubusercontent.com/rohit267/net-merge/main/install.sh | sh -s -- uninstall
+curl -fsSL https://raw.githubusercontent.com/DodoBird-debian/net-merge/main/install.sh | sh -s -- uninstall
 ```
 
 **Windows**: paste this into PowerShell, or use *Settings > Apps > Installed apps > net-merge > Uninstall*.
@@ -330,7 +332,7 @@ net-merge quit; net-merge autostart off; sudo rm -f /usr/local/bin/net-merge
 
 ```nix
 # flake.nix
-inputs.net-merge.url = "github:rohit267/net-merge";
+inputs.net-merge.url = "github:DodoBird-debian/net-merge";
 
 # configuration.nix (with `inputs` passed via specialArgs)
 imports = [ inputs.net-merge.nixosModules.default ];
@@ -340,7 +342,7 @@ programs.net-merge = {
 };
 ```
 
-To try it without installing: `sudo nix run github:rohit267/net-merge -- run`.
+To try it without installing: `sudo nix run github:DodoBird-debian/net-merge -- run`.
 
 ## Add a second connection
 
