@@ -86,6 +86,7 @@ type nativeWindows struct {
 	trayWindow                                                     uintptr
 	oldProc                                                        atomic.Uintptr
 	hooked                                                         atomic.Bool
+	menuDepth                                                      atomic.Int32
 	hoverPoint                                                     point
 	hoverVisible                                                   bool
 }
@@ -392,7 +393,9 @@ func nativeWndProc(hwnd uintptr, message uint32, w, l uintptr) uintptr {
 		n.open()
 		return 0
 	case wmHover:
-		n.showHover()
+		if n.menuDepth.Load() == 0 {
+			n.showHover()
+		}
 		return 0
 	case wmHideHover:
 		if n.hover != 0 {
@@ -426,6 +429,10 @@ func nativeWndProc(hwnd uintptr, message uint32, w, l uintptr) uintptr {
 			n.window = 0
 		}
 		return 0
+	case 0x400: // DM_GETDEFID: Enter activates Apply in this modeless dialog.
+		if hwnd == n.window {
+			return 0x534b0000 | 106
+		}
 	case wmCommand:
 		id := w & 0xffff
 		notification := (w >> 16) & 0xffff
@@ -565,7 +572,14 @@ func (n *nativeWindows) showHover() {
 // window procedure. Subclass only our own process's window; forward every event.
 func trayHook(h uintptr, message uint32, w, l uintptr) uintptr {
 	if message == 0x117 {
+		native.menuDepth.Add(1)
+		win("PostMessageW").Call(native.hwnd.Load(), wmHideHover, 0, 0)
 		setMenuRTL(w, i18n.RTL())
+	}
+	if message == 0x125 {
+		if native.menuDepth.Add(-1) < 0 {
+			native.menuDepth.Store(0)
+		}
 	}
 	if message == 0x401 {
 		if l == 0x200 {

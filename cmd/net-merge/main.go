@@ -341,7 +341,7 @@ func cmdList(args []string) {
 		fmt.Printf(i18n.T("USE   %s  (index %d)\n"), describeNic(n), n.Index)
 	}
 	for _, s := range skipped {
-		fmt.Printf(i18n.T("skip  %s: %s\n"), s.Name, s.Reason)
+		fmt.Printf(i18n.T("skip  %s: %s\n"), i18n.LTR(s.Name), i18n.T(s.Reason))
 	}
 }
 
@@ -376,10 +376,21 @@ func cmdSocks(args []string) {
 	}
 	logx.Printf(i18n.T("net-merge SOCKS5 listening on %s\n"), *listen)
 	defer state.CheckpointQuotas(c.stateDir, sched)
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(sig)
 	go func() {
 		tick := time.NewTicker(300 * time.Millisecond)
 		defer tick.Stop()
-		for range tick.C {
+		for {
+			select {
+			case <-sig:
+				sched.Pause(true)
+				_ = state.CheckpointQuotas(c.stateDir, sched)
+				ln.Close()
+				return
+			case <-tick.C:
+			}
 			if r, ok := state.TakeLimit(c.stateDir); ok {
 				sched.SetLimit(r.Adapter, r.Mbps)
 				if e := state.CheckpointLimits(c.stateDir, sched); e != nil {
@@ -533,6 +544,11 @@ func cmdStatus(args []string) {
 	fs.Parse(args)
 	st, on := state.ReadAny(*dir)
 	if !on {
+		if *jsonOut {
+			b, _ := json.Marshal(state.Status{Mode: "off", Paused: true})
+			fmt.Println(string(b))
+			return
+		}
 		fmt.Println(i18n.T("net-merge is OFF."))
 		return
 	}

@@ -1,6 +1,9 @@
 package main
 
 import (
+	"bytes"
+	"flag"
+	"net-merge/internal/i18n"
 	"strings"
 	"testing"
 	"time"
@@ -96,5 +99,19 @@ func TestFormatNICsShowsTheCapInMbit(t *testing.T) {
 	}
 	if strings.Contains(out, "MB/s") {
 		t.Fatalf("status must not mix megabytes into a Mbit/s line:\n%s", out)
+	}
+}
+
+func TestArabicFlagHelpTranslatesDefaultText(t *testing.T) {
+	defer i18n.Set("en")
+	i18n.Set("ar")
+	fs := newFlags("tray", flag.ContinueOnError)
+	var c common
+	c.register(fs)
+	var out bytes.Buffer
+	fs.SetOutput(&out)
+	fs.Usage()
+	if strings.Contains(out.String(), "(default ") || !strings.Contains(out.String(), "الافتراضي") || !strings.Contains(out.String(), "-state-dir") {
+		t.Fatal(out.String())
 	}
 }

@@ -356,6 +356,9 @@ func (s *Scheduler) Tick(dt time.Duration) {
 			in, out := sl.bytesIn[f].Load(), sl.bytesOut[f].Load()
 			sl.rateIn[f] = float64(in-sl.lastIn[f]) / sec
 			sl.rateOut[f] = float64(out-sl.lastOut[f]) / sec
+			if sl.paused.Load() {
+				sl.rateIn[f], sl.rateOut[f] = 0, 0
+			}
 			sl.lastIn[f], sl.lastOut[f] = in, out
 			r := sl.rateIn[f] + sl.rateOut[f]
 			if r >= minMeasuredPeak && r >= 0.05*sl.peak[f] {
