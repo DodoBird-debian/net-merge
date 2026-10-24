@@ -286,7 +286,7 @@ func (u *trayUI) refresh() {
 	if err := u.sched.StorageError(); err != "" {
 		word = i18n.T("Cannot save data usage; traffic blocked") + ": " + err
 	}
-	u.header.SetTitle(fmt.Sprintf(i18n.T("%s · %s ↓%s ↑%s Mbps"), word, i18n.T("Total"), mbps(down), mbps(up)))
+	u.header.SetTitle(fmt.Sprintf("%s · %s %s", word, i18n.T("Total"), speedText(down, up)))
 	u.totalUsage.SetTitle(i18n.T("Used since start") + ": " + gb(used))
 	if u.lastErr != "" {
 		u.header.SetTitle(i18n.T("Error") + ": " + u.lastErr)
@@ -298,7 +298,7 @@ func (u *trayUI) refresh() {
 		if !on || !s.Present {
 			rateIn, rateOut = 0, 0
 		}
-		txt := fmt.Sprintf(i18n.T("%s: ↓%s ↑%s Mbps · %s: %s"), i18n.LTR(s.Name), mbps(rateIn), mbps(rateOut), i18n.T("Used since start"), gb(s.SessionBytes))
+		txt := fmt.Sprintf("%s: %s · %s: %s", i18n.LTR(s.Name), speedText(rateIn, rateOut), i18n.T("Used since start"), gb(s.SessionBytes))
 		switch {
 		case !s.Present:
 			txt += " · " + i18n.T("Disconnected")
@@ -365,10 +365,13 @@ func usageTooltip(word string, down, up float64, stats []engine.SlotStats, on bo
 		if !s.Present {
 			name += " (" + i18n.T("Disconnected") + ")"
 		}
-		lines = append(lines, fmt.Sprintf(i18n.T("%s: ↓%s ↑%s Mbps\n%s: %s"), name, mbps(d), mbps(u), i18n.T("Used since start"), gb(s.SessionBytes)))
+		lines = append(lines, fmt.Sprintf("%s: %s\n%s: %s", name, speedText(d, u), i18n.T("Used since start"), gb(s.SessionBytes)))
 	}
-	lines = append(lines, fmt.Sprintf(i18n.T("%s: ↓%s ↑%s Mbps\n%s: %s"), i18n.T("Total"), mbps(down), mbps(up), i18n.T("Used since start"), gb(used)))
+	lines = append(lines, fmt.Sprintf("%s: %s\n%s: %s", i18n.T("Total"), speedText(down, up), i18n.T("Used since start"), gb(used)))
 	return strings.Join(lines, "\n\n")
+}
+func speedText(down, up float64) string {
+	return i18n.LTR(fmt.Sprintf("↓%s ↑%s Mbps", mbps(down), mbps(up)))
 }
 func gb(bytes int64) string {
 	return i18n.LTR(fmt.Sprintf(i18n.T("%.2f GB"), float64(bytes)/float64(engine.BytesPerGB)))

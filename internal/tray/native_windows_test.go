@@ -93,6 +93,7 @@ func TestNativeWindowsLimitsAndArabicHover(t *testing.T) {
 			t.Error("missing hover panel")
 		}
 		captureNativeWindow(t, native.hover, "hover-arabic.png")
+
 		got := getText(native.hoverText)
 		for _, want := range []string{i18n.T("Paused"), i18n.T("Used since start"), i18n.T("Total"), "0.00 GB", "Wi-Fi"} {
 			if !strings.Contains(got, want) {
@@ -105,6 +106,12 @@ func TestNativeWindowsLimitsAndArabicHover(t *testing.T) {
 			t.Error("invalid hover panel size")
 		}
 	})
+	stats := s.Snapshot()
+	stats[0].SessionBytes = 1_230_000_000
+	stats[0].RateIn, stats[0].RateOut = 250_000, 125_000
+	setNativeHover(usageTooltip(stateWord(true), 250_000, 125_000, stats, true), true)
+	native.invoke(func() { native.updateHoverText(); captureNativeWindow(t, native.hover, "hover-arabic-active.png") })
+
 }
 
 // Capture only the test's own windows, never the runner's desktop or other apps.
