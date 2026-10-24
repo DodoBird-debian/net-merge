@@ -54,4 +54,3 @@ jobs:
           path: |
             dist/net-merge-setup-*.exe
             dist/net-merge-*-portable.zip
-

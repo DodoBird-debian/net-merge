@@ -99,8 +99,8 @@ func TestLanguagePersistenceAndBidi(t *testing.T) {
 	if !RTL() || T("Paused") == "Paused" {
 		t.Fatal("saved Arabic not loaded")
 	}
-	if LTR("Wi-Fi 2") != "\u2066Wi-Fi 2\u2069" {
-		t.Fatal("missing bidi isolation")
+	if LTR("Wi-Fi 2") != "\u202aWi-Fi 2\u202c" {
+		t.Fatal("missing native-compatible bidi embedding")
 	}
 	if Set("invalid") {
 		t.Fatal("invalid locale accepted")

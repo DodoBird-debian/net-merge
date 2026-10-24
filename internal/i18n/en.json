@@ -184,6 +184,8 @@
   "test only: exit abruptly (no cleanup) after this long": "test only: exit abruptly (no cleanup) after this long",
   "the speed must be between 0 and %.0f Mbit/s": "the speed must be between 0 and %.0f Mbit/s",
   "the tray can't start at sign-in without the passwordless rule; run once: sudo net-merge install": "the tray can't start at sign-in without the passwordless rule; run once: sudo net-merge install",
+  "the tray needs CAP_NET_ADMIN. Grant it once with:\n  sudo setcap cap_net_admin,cap_net_raw+ep %s\n`sudo net-merge run` works without it": "the tray needs CAP_NET_ADMIN. Grant it once with:\n  sudo setcap cap_net_admin,cap_net_raw+ep %s\n`sudo net-merge run` works without it",
+  "the tray needs CAP_NET_ADMIN: enable programs.net-merge in your NixOS configuration and run /run/wrappers/bin/net-merge (see README). `sudo net-merge run` works without it": "the tray needs CAP_NET_ADMIN: enable programs.net-merge in your NixOS configuration and run /run/wrappers/bin/net-merge (see README). `sudo net-merge run` works without it",
   "tunnel/virtual interface (%s, no hardware device)": "tunnel/virtual interface (%s, no hardware device)",
   "tunnel/virtual interface type %d (%s)": "tunnel/virtual interface type %d (%s)",
   "turn off automatically after this long (0 = until stopped)": "turn off automatically after this long (0 = until stopped)",

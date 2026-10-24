@@ -114,8 +114,17 @@ func captureNativeWindow(t *testing.T, hwnd uintptr, name string) {
 	if dir == "" {
 		return
 	}
+	win("SetWindowPos").Call(hwnd, ^uintptr(0), 0, 0, 0, 0, 0x53)
+	win("RedrawWindow").Call(hwnd, 0, 0, 0x185)
+	win("UpdateWindow").Call(hwnd)
+	dwm := windows.NewLazySystemDLL("dwmapi.dll")
+	dwm.NewProc("DwmFlush").Call()
 	var r rect
 	win("GetWindowRect").Call(hwnd, uintptr(unsafe.Pointer(&r)))
+	var frame rect
+	if result, _, _ := dwm.NewProc("DwmGetWindowAttribute").Call(hwnd, 9, uintptr(unsafe.Pointer(&frame)), unsafe.Sizeof(frame)); result == 0 {
+		r = frame
+	}
 	w, h := int(r.Right-r.Left), int(r.Bottom-r.Top)
 	if w <= 0 || h <= 0 || w > 4096 || h > 4096 {
 		t.Error("invalid capture size")
@@ -128,19 +137,11 @@ func captureNativeWindow(t *testing.T, hwnd uintptr, name string) {
 	bitmap, _, _ := gdi32.NewProc("CreateCompatibleBitmap").Call(dc, uintptr(w), uintptr(h))
 	defer gdi32.NewProc("DeleteObject").Call(bitmap)
 	old, _, _ := gdi32.NewProc("SelectObject").Call(mem, bitmap)
-	win("SetWindowPos").Call(hwnd, ^uintptr(0), 0, 0, 0, 0, 0x53)
-	win("RedrawWindow").Call(hwnd, 0, 0, 0x185)
-	win("UpdateWindow").Call(hwnd)
-	windows.NewLazySystemDLL("dwmapi.dll").NewProc("DwmFlush").Call()
-	style, _, _ := win("GetWindowLongPtrW").Call(hwnd, ^uintptr(19))
-	if style&wsRTL != 0 {
-		gdi32.NewProc("SetLayout").Call(mem, 9)
-	}
-	ok, _, _ := win("PrintWindow").Call(hwnd, mem, 2)
 	gdi32.NewProc("SetLayout").Call(mem, 0)
+	copied, _, _ := gdi32.NewProc("BitBlt").Call(mem, 0, 0, uintptr(w), uintptr(h), dc, uintptr(r.Left), uintptr(r.Top), 0xc0cc0020)
 	gdi32.NewProc("SelectObject").Call(mem, old)
-	if ok == 0 {
-		t.Log("PrintWindow unavailable on this runner")
+	if copied == 0 {
+		t.Error("could not capture native window")
 		return
 	}
 	type bitmapHeader struct {
@@ -153,7 +154,7 @@ func captureNativeWindow(t *testing.T, hwnd uintptr, name string) {
 	}
 	header := bitmapHeader{Size: 40, Width: int32(w), Height: -int32(h), Planes: 1, Bits: 32}
 	pixels := make([]byte, w*h*4)
-	if n, _, _ := gdi32.NewProc("GetDIBits").Call(dc, bitmap, 0, uintptr(h), uintptr(unsafe.Pointer(&pixels[0])), uintptr(unsafe.Pointer(&header)), 0); n == 0 {
+	if rows, _, _ := gdi32.NewProc("GetDIBits").Call(dc, bitmap, 0, uintptr(h), uintptr(unsafe.Pointer(&pixels[0])), uintptr(unsafe.Pointer(&header)), 0); rows == 0 {
 		t.Error("GetDIBits failed")
 		return
 	}
@@ -172,29 +173,6 @@ func captureNativeWindow(t *testing.T, hwnd uintptr, name string) {
 	}
 	defer file.Close()
 	if err := png.Encode(file, result); err != nil {
-		t.Error(err)
-	}
-
-	// Compare to the pixels actually displayed, restricted to this window's rectangle.
-	gdi32.NewProc("SelectObject").Call(mem, bitmap)
-	gdi32.NewProc("SetLayout").Call(dc, 0)
-	copied, _, _ := gdi32.NewProc("BitBlt").Call(mem, 0, 0, uintptr(w), uintptr(h), dc, uintptr(r.Left), uintptr(r.Top), 0xc0cc0020)
-	gdi32.NewProc("SelectObject").Call(mem, old)
-	if copied == 0 {
-		t.Log("screen capture unavailable on runner")
-		return
-	}
-	gdi32.NewProc("GetDIBits").Call(dc, bitmap, 0, uintptr(h), uintptr(unsafe.Pointer(&pixels[0])), uintptr(unsafe.Pointer(&header)), 0)
-	for i := 0; i < len(pixels); i += 4 {
-		result.Pix[i], result.Pix[i+1], result.Pix[i+2], result.Pix[i+3] = pixels[i+2], pixels[i+1], pixels[i], 255
-	}
-	screen, err := os.Create(filepath.Join(dir, strings.TrimSuffix(name, ".png")+"-screen.png"))
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	defer screen.Close()
-	if err := png.Encode(screen, result); err != nil {
 		t.Error(err)
 	}
 }

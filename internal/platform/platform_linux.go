@@ -104,12 +104,9 @@ func RelaunchElevated(args []string, hidden bool) error {
 func RelaunchTray(args []string, hidden bool) error {
 	exe, _ := os.Executable()
 	if strings.HasPrefix(exe, "/nix/store/") { // read-only: capabilities come from a NixOS security wrapper
-		return errors.New("the tray needs CAP_NET_ADMIN: enable programs.net-merge in your NixOS configuration " +
-			"and run /run/wrappers/bin/net-merge (see README). `sudo net-merge run` works without it")
+		return errors.New(i18n.T("the tray needs CAP_NET_ADMIN: enable programs.net-merge in your NixOS configuration and run /run/wrappers/bin/net-merge (see README). `sudo net-merge run` works without it"))
 	}
-	return errors.New("the tray needs CAP_NET_ADMIN. Grant it once with:\n" +
-		"  sudo setcap cap_net_admin,cap_net_raw+ep " + exe + "\n" +
-		"`sudo net-merge run` works without it")
+	return fmt.Errorf(i18n.T("the tray needs CAP_NET_ADMIN. Grant it once with:\n  sudo setcap cap_net_admin,cap_net_raw+ep %s\n`sudo net-merge run` works without it"), exe)
 }
 
 // HasConsole reports whether stderr is a terminal.

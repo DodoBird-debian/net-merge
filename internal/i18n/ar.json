@@ -184,6 +184,8 @@
   "test only: exit abruptly (no cleanup) after this long": "للاختبار فقط: الخروج فجأة (دون تنظيف) بعد هذه المدة",
   "the speed must be between 0 and %.0f Mbit/s": "يجب أن تكون السرعة بين 0 و%.0f Mbit/s",
   "the tray can't start at sign-in without the passwordless rule; run once: sudo net-merge install": "لا يمكن تشغيل أيقونة منطقة الإشعارات عند تسجيل الدخول دون قاعدة الإعفاء من كلمة المرور؛ نفّذ مرة واحدة: sudo net-merge install",
+  "the tray needs CAP_NET_ADMIN. Grant it once with:\n  sudo setcap cap_net_admin,cap_net_raw+ep %s\n`sudo net-merge run` works without it": "تحتاج أيقونة منطقة الإشعارات إلى CAP_NET_ADMIN. امنحها مرة واحدة باستخدام:\n  sudo setcap cap_net_admin,cap_net_raw+ep %s\nيعمل `sudo net-merge run` دون ذلك",
+  "the tray needs CAP_NET_ADMIN: enable programs.net-merge in your NixOS configuration and run /run/wrappers/bin/net-merge (see README). `sudo net-merge run` works without it": "تحتاج أيقونة منطقة الإشعارات إلى CAP_NET_ADMIN: فعّل programs.net-merge في إعدادات NixOS وشغّل /run/wrappers/bin/net-merge (راجع README). يعمل `sudo net-merge run` دون ذلك",
   "tunnel/virtual interface (%s, no hardware device)": "واجهة نفق/واجهة افتراضية (%s، بلا جهاز فعلي)",
   "tunnel/virtual interface type %d (%s)": "واجهة نفق/واجهة افتراضية من النوع %d (%s)",
   "turn off automatically after this long (0 = until stopped)": "الإيقاف تلقائيًا بعد هذه المدة (0 للاستمرار حتى الإيقاف)",

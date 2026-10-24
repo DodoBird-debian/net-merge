@@ -41,10 +41,12 @@ func T(message string) string {
 	return message
 }
 
-// LTR isolates names, versions, paths and addresses inside an Arabic sentence.
+// LTR embeds names, versions, paths and units inside an Arabic sentence.
+// Classic Win32 controls support LRE/PDF; Unicode isolate controls may render
+// as missing-glyph boxes in the system GUI font.
 func LTR(value string) string {
 	if RTL() {
-		return "\u2066" + value + "\u2069"
+		return "\u202a" + value + "\u202c"
 	}
 	return value
 }
