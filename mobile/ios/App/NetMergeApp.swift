@@ -80,7 +80,7 @@ struct MainView: View {
             ForEach(model.connections) { c in
                 Section(ltr(c.name)) {
                     Text(L(!c.present ? "disconnected" : c.quotaExhausted ? "exhausted" : c.state == "up" || c.state6 == "up" ? "up" : "checking"))
-                    Text(ltr("↓ \(speed(c.rateIn))   ↑ \(speed(c.rateOut))"))
+                    Text(ltr("↓ \(speed(model.connected && !model.paused ? c.rateIn : 0))   ↑ \(speed(model.connected && !model.paused ? c.rateOut : 0))"))
                     Text(String(format:L("used_start"),ltr(GB(c.sessionBytes))))
                     Text(String(format:L("used_allowance"),ltr(GB(c.quotaUsedBytes))))
                     Text(String(format:L("remaining"),c.quotaBytes == 0 ? L("unlimited") : ltr(GB(c.quotaRemainingBytes))))

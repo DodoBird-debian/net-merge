@@ -89,6 +89,8 @@ jobs:
           unzip -l dist/*unsigned.ipa
           test -d mobile/ios/build/ipa/Payload/NetMerge.app/PlugIns/PacketTunnel.appex
           test ! -f mobile/ios/build/ipa/Payload/NetMerge.app/embedded.mobileprovision
+          test -f mobile/ios/build/ipa/Payload/NetMerge.app/ar.lproj/Localizable.strings
+          test -f mobile/ios/build/ipa/Payload/NetMerge.app/PlugIns/PacketTunnel.appex/ar.lproj/Localizable.strings
       - uses: actions/upload-artifact@v4
         with:
           name: build-ios
@@ -99,3 +101,28 @@ jobs:
         with:
           name: ios-headers
           path: mobile/ios/Frameworks/**/*.h
+  android-smoke:
+    needs: android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-debug
+          path: smoke-apk
+      - name: Enable emulator acceleration
+        run: |
+          sudo chmod 666 /dev/kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          script: python3 scripts/android-smoke.py smoke-apk/net-merge-0.4.0-android-debug.apk
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phone-ui-screenshots
+          path: phone-screenshots/*

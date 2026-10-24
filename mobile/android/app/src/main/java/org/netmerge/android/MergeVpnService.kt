@@ -94,7 +94,7 @@ class MergeVpnService : VpnService() {
         val nets = tracker?.current().orEmpty()
 
         val builder = Builder()
-            .setSession(getString(R.string.app_name))
+            .setSession(Engine.localized(applicationContext).getString(R.string.app_name))
             .setMtu(MTU)
             .addAddress("198.18.0.1", 24)
             .addRoute("0.0.0.0", 0)
@@ -212,9 +212,9 @@ class MergeVpnService : VpnService() {
     private fun goForeground() {
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL, getString(R.string.channel_name), NotificationManager.IMPORTANCE_LOW),
+            NotificationChannel(CHANNEL, Engine.localized(applicationContext).getString(R.string.channel_name), NotificationManager.IMPORTANCE_LOW),
         )
-        val n = buildNotification(getString(R.string.notif_waiting))
+        val n = buildNotification(Engine.localized(applicationContext).getString(R.string.notif_waiting))
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             // systemExempted covers active VPN apps; fall back to specialUse if the system disagrees.
             try {
@@ -236,22 +236,22 @@ class MergeVpnService : VpnService() {
         )
         return Notification.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_merge)
-            .setContentTitle(getString(R.string.notif_title))
+            .setContentTitle(Engine.localized(applicationContext).getString(R.string.notif_title))
             .setContentText(text)
             .setStyle(Notification.BigTextStyle().bigText(text))
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setContentIntent(open)
-            .addAction(Notification.Action.Builder(null, getString(R.string.stop), stop).build())
+            .addAction(Notification.Action.Builder(null, Engine.localized(applicationContext).getString(R.string.stop), stop).build())
             .build()
     }
 
     private fun updateNotification() {
         if (Engine.phase.value != Engine.Phase.ON) return
         val stats = Engine.stats.value
-        val text = if (stats.isEmpty()) getString(R.string.notif_waiting)
-        else stats.joinToString("\n") { "${it.name}: ${Stats.rate(it.rateIn + it.rateOut)} · ${getString(R.string.used_start, Stats.gb(it.sessionBytes))}" } + "\n" + getString(R.string.total_used, Stats.gb(stats.sumOf { it.sessionBytes }))
-        val statusText = if (stats.any { it.present } && stats.filter { it.present }.all { it.quotaExhausted }) getString(R.string.exhausted) + "\n" + text else text
+        val text = if (stats.isEmpty()) Engine.localized(applicationContext).getString(R.string.notif_waiting)
+        else stats.joinToString("\n") { "${it.name}: ${Stats.rate(it.rateIn + it.rateOut)} · ${Engine.localized(applicationContext).getString(R.string.used_start, Stats.gb(it.sessionBytes))}" } + "\n" + Engine.localized(applicationContext).getString(R.string.total_used, Stats.gb(stats.sumOf { it.sessionBytes }))
+        val statusText = if (stats.any { it.present } && stats.filter { it.present }.all { it.quotaExhausted }) Engine.localized(applicationContext).getString(R.string.exhausted) + "\n" + text else text
         getSystemService(NotificationManager::class.java).notify(NOTIF_ID, buildNotification(statusText))
     }
 }

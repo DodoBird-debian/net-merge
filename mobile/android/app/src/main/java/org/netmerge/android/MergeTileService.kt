@@ -36,6 +36,7 @@ class MergeTileService : TileService() {
 
     private fun refresh() {
         val tile = qsTile ?: return
+        tile.label = Engine.localized(this).getString(R.string.app_name)
         tile.state = if (Engine.phase.value != Engine.Phase.OFF) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
         tile.updateTile()
     }
