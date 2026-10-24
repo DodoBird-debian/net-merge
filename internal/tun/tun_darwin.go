@@ -3,6 +3,7 @@ package tun
 import (
 	"fmt"
 	"net"
+	"net-merge/internal/i18n"
 	"net/netip"
 	"os/exec"
 	"regexp"
@@ -28,7 +29,7 @@ func init() {
 func configure(name string, _ int, ip4 netip.Prefix) (int, error) {
 	ifc, err := net.InterfaceByName(name)
 	if err != nil {
-		return 0, fmt.Errorf("adapter %q did not appear: %w", name, err)
+		return 0, fmt.Errorf(i18n.T("adapter %q did not appear: %w"), name, err)
 	}
 	// Before the capture routes: pinned sockets need these the moment the /1 routes exist.
 	if err := startScopedSync(); err != nil {
@@ -45,12 +46,12 @@ func configure(name string, _ int, ip4 netip.Prefix) (int, error) {
 	}
 	// IPv6 is best-effort: if it can't be set up, IPv4 still works and IPv6 stays on its normal path.
 	if err := run("/sbin/ifconfig", name, "inet6", tunIP6, "prefixlen", "64", "alias"); err != nil {
-		logx.Printf("warning: IPv6 not captured: %v\n", err)
+		logx.Printf(i18n.T("warning: IPv6 not captured: %v\n"), err)
 		return ifc.Index, nil
 	}
 	for _, dst := range routes6 {
 		if err := run("/sbin/route", "-q", "-n", "add", "-inet6", dst, "-interface", name); err != nil {
-			logx.Printf("warning: IPv6 route %s: %v\n", dst, err)
+			logx.Printf(i18n.T("warning: IPv6 route %s: %v\n"), dst, err)
 		}
 	}
 	return ifc.Index, nil
@@ -113,7 +114,7 @@ func startScopedSync() error {
 	scoped.mu.Unlock()
 	if err := syncScoped(stop); err != nil {
 		stopScopedSync()
-		return fmt.Errorf("scoped routes: %w", err)
+		return fmt.Errorf(i18n.T("scoped routes: %w"), err)
 	}
 	go func() {
 		t := time.NewTicker(3 * time.Second)
@@ -124,7 +125,7 @@ func startScopedSync() error {
 				return
 			case <-t.C:
 				if err := syncScoped(stop); err != nil {
-					logx.Printf("warning: scoped routes: %v\n", err)
+					logx.Printf(i18n.T("warning: scoped routes: %v\n"), err)
 				}
 			}
 		}

@@ -7,6 +7,37 @@
 > Rebranded for [Iraq PC Community on Facebook](https://www.facebook.com/groups/1088749137864406/).
 > Based on [net-merge by Rohit Mahto](https://github.com/rohit267/net-merge). The original MIT license and copyright notice are preserved.
 
+
+## Iraq PC Community additions
+
+[الدليل باللغة العربية](README.ar.md)
+
+This fork adds **per-connection data allowances**, **session usage in GB**, and **Arabic/English support**. Existing per-connection speed limits remain available. Preview builds are attached to the fork's **community validation** workflow; install this fork's build to use these additions. The upstream installation commands further below install the original project.
+
+- Open **Connection limits…** from the tray to set a custom speed in Mbps and an allowance in decimal GB for each adapter. Upload and download share one data allowance; the speed cap applies separately to each direction.
+- **Used since start** in the menu and Windows hover panel counts only traffic relayed through net-merge. Every tracked connection and the combined total are shown. Session usage survives pause/resume and reconnects, and resets when the process restarts.
+- **Allowance used** is saved across restarts and resets only through **Reset used data…**. Changing a limit or selecting Unlimited preserves the recorded usage.
+- When an allowance is exhausted, the app closes that adapter's relayed connections and assigns new connections to other eligible adapters. Applications may need to reconnect. If every allowance is exhausted, capture stays active and the app reports the condition instead of reusing a capped link.
+- While an allowance is enabled, automatic pause is suspended. A manual pause stops relaying and clearly shows **Paused**. Other traffic then uses your normal network routing and is neither counted nor limited by net-merge.
+- Choose **العربية / English** in the tray. Arabic Windows installations default to Arabic. The saved choice also applies to help and messages; the Windows settings and installer use right-to-left layouts.
+
+Useful commands (adapter names or stable IDs are accepted):
+
+```text
+net-merge limit "Wi-Fi" 7.5
+net-merge quota "Wi-Fi" 10
+net-merge quota "Wi-Fi" reset
+net-merge quota "Wi-Fi" unlimited
+net-merge quota
+net-merge status -json
+net-merge language ar
+net-merge language en
+```
+
+`GB` means 1,000,000,000 bytes. Usage combines relayed upload and download payloads, including small UDP packets and IPv4/IPv6. It excludes traffic bound directly to adapters, traffic while paused, protocol overhead, and traffic from other devices: **this is not the ISP's billing total**. Kernel buffers and concurrent I/O can slightly exceed an allowance at cutoff. A crash may lose the latest one-second checkpoint. Unreadable allowance files stop startup; failed saves block relaying until storage recovers. Do not run multiple SOCKS instances against the same state directory.
+
+On macOS, unprivileged SOCKS mode keeps its state in the user's cache under `net-merge-socks`; pass that directory with `-state-dir` to control it. The native limits window and expanded hover panel are Windows features; existing Linux/macOS tray and CLI support remain.
+
 <p align="center">
   <strong>Use all your internet connections at the same time.</strong><br>
   Combine Wi-Fi, Ethernet and phone hotspots, so downloads, games and browsers get the speed of every connection added up.
@@ -349,7 +380,7 @@ net-merge when you do not want that.
    you paused it. Untick *Pause when there is only one connection* in the menu to switch this off, or run
    `net-merge tray -auto-pause=false`.
 4. **Hover** the icon to see the speed of each connection and the total.
-5. **Right-click** the icon (on Mac, click it) to open the menu. It shows each connection's speed, how
+5. **Right-click** the icon (on Mac, click it) to open the menu. It shows each connection's relayed speed and session usage, how
    many connections net-merge gave it, and the buttons *Pause merging* / *Start merging* and *Quit*. The
    line above *Quit* is the version you are running, like `v0.3.3`. It reads the newest release number
    from GitHub (at start, and again every 6 hours) and turns into *Update to v0.3.4* if there is one;

@@ -6,6 +6,7 @@ entry here before pushing a version tag.
 ## [Unreleased]
 
 ### Added
+- **Community fork:** manually reset data allowances per adapter, relayed session usage in GB for each connection and the total, a native Windows limits window and expanded hover panel, and complete Arabic/English app and installer text with RTL layouts. Saved allowances close exhausted TCP/UDP links and cannot be bypassed by automatic pause.
 - **Speed limits per connection** from the tray menu: click a connection and pick 1, 2, 5, 10, 20, 50 or
   100 Mbit/s (or *Unlimited*). The cap covers that connection's downloads and uploads across all of its
   flows and takes effect immediately; the choice is saved and applied again after a restart (on macOS

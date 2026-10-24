@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"net-merge/internal/i18n"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -139,9 +140,9 @@ func (b *Balancer) DialTCP(ctx context.Context, host string, port int) (net.Conn
 	}
 	tried := map[string]struct{}{}
 	rep := byte(repFailure)
-	var lastErr error = errors.New("no usable network adapter")
+	var lastErr error = errors.New(i18n.T("no usable network adapter"))
 	if f == Fam6 {
-		rep, lastErr = repNetUnreachable, errors.New("no usable IPv6 adapter")
+		rep, lastErr = repNetUnreachable, errors.New(i18n.T("no usable IPv6 adapter"))
 	}
 	for {
 		sl := b.S.AcquireFor(f, tried)
@@ -150,13 +151,17 @@ func (b *Balancer) DialTCP(ctx context.Context, host string, port int) (net.Conn
 		}
 		tried[sl.key] = struct{}{}
 		d := net.Dialer{
-			LocalAddr: &net.TCPAddr{IP: sl.ip(f)},            // binding the source IP pins the flow to this NIC
-			Control:   nics.ForceEgress(sl.Index, f == Fam6), // and this forces egress even if the TUN's routes match
+			LocalAddr: &net.TCPAddr{IP: sl.ip(f)},                // binding the source IP pins the flow to this NIC
+			Control:   nics.ForceEgress(sl.ifIndex(), f == Fam6), // and this forces egress even if the TUN's routes match
 			Timeout:   b.ConnectTimeout,
 			KeepAlive: 30 * time.Second,
 		}
 		conn, err := d.DialContext(ctx, network, net.JoinHostPort(host, strconv.Itoa(port)))
 		if err == nil {
+			if !sl.register(conn) {
+				b.S.ReleaseFor(sl, f)
+				return nil, nil, f, ErrQuota
+			}
 			return conn, sl, f, nil
 		}
 		b.S.ReleaseFor(sl, f)
@@ -186,6 +191,14 @@ var bufPool = sync.Pool{New: func() any { b := make([]byte, 128<<10); return &b 
 // protocols that shut down their write side still receive the reply.
 func Relay(client, upstream net.Conn, sl *Slot, f Family, s *Scheduler) {
 	activity := s.track(sl, f)
+	defer sl.unregister(upstream)
+	defer sl.unregister(client)
+	if !sl.register(client) {
+		upstream.Close()
+		s.untrack(sl, f, activity)
+		s.ReleaseFor(sl, f)
+		return
+	}
 	var wg sync.WaitGroup
 	var once sync.Once
 	release := func() {
@@ -208,15 +221,28 @@ func Relay(client, upstream net.Conn, sl *Slot, f Family, s *Scheduler) {
 }
 
 func pump(dst, src net.Conn, counter *atomic.Int64, sl *Slot, down bool, activity *flowActivity) {
+	f := Fam4
+	if counter == &sl.bytesIn[Fam6] || counter == &sl.bytesOut[Fam6] {
+		f = Fam6
+	}
 	bp := bufPool.Get().(*[]byte)
 	defer bufPool.Put(bp)
 	buf := *bp
 	for {
+		if !sl.allowed() {
+			dst.Close()
+			src.Close()
+			return
+		}
 		n, err := src.Read(buf)
 		if n > 0 {
 			activity.bytes.Add(int64(n))
-			counter.Add(int64(n))
-			if _, werr := sl.writePaced(dst, buf[:n], down); werr != nil {
+			written, werr := sl.writePaced(dst, buf[:n], down)
+			sl.account(f, down, written)
+			if counter != &sl.bytesIn[f] && counter != &sl.bytesOut[f] {
+				counter.Add(int64(written))
+			}
+			if werr != nil {
 				dst.Close()
 				src.Close()
 				return

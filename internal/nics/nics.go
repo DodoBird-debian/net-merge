@@ -3,6 +3,7 @@ package nics
 import (
 	"fmt"
 	"net"
+	"net-merge/internal/i18n"
 	"regexp"
 	"strings"
 )
@@ -11,7 +12,8 @@ import (
 // and/or its global IPv6 address (either may be nil).
 type Nic struct {
 	Name   string
-	Index  int // interface index, used to force egress (IP_UNICAST_IF); 0 = don't force
+	ID     string // stable adapter ID on Windows; name on other platforms
+	Index  int    // interface index, used to force egress (IP_UNICAST_IF); 0 = don't force
 	IP     net.IP
 	IP6    net.IP
 	Weight float64
@@ -65,7 +67,7 @@ func DiscoverNicsDetailed(include []string, weights map[string]float64) ([]Nic, 
 				skip(ai.virtual)
 				continue
 			case info != nil && haveInfo && virtualDesc.MatchString(ai.desc):
-				skip(fmt.Sprintf("virtual/VPN adapter (%s)", ai.desc))
+				skip(fmt.Sprintf(i18n.T("virtual/VPN adapter (%s)"), ai.desc))
 				continue
 			}
 		}
@@ -107,7 +109,7 @@ func DiscoverNicsDetailed(include []string, weights map[string]float64) ([]Nic, 
 		if v, ok := weights[ifc.Name]; ok {
 			w = v
 		}
-		out = append(out, Nic{Name: ifc.Name, Index: ifc.Index, IP: ip4, IP6: ip6, Weight: w})
+		out = append(out, Nic{Name: ifc.Name, ID: adapterID(ifc.Index, ifc.Name), Index: ifc.Index, IP: ip4, IP6: ip6, Weight: w})
 	}
 	return out, skipped, nil
 }

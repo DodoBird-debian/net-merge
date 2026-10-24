@@ -3,6 +3,7 @@ package tun
 import (
 	"fmt"
 	"net"
+	"net-merge/internal/i18n"
 	"net/netip"
 
 	"github.com/vishvananda/netlink"
@@ -19,28 +20,28 @@ const openHint = "needs root or CAP_NET_ADMIN, and /dev/net/tun"
 func configure(name string, _ int, ip4 netip.Prefix) (int, error) {
 	link, err := netlink.LinkByName(name)
 	if err != nil {
-		return 0, fmt.Errorf("adapter %q did not appear: %w", name, err)
+		return 0, fmt.Errorf(i18n.T("adapter %q did not appear: %w"), name, err)
 	}
 	idx := link.Attrs().Index
 	if err := netlink.AddrReplace(link, &netlink.Addr{IPNet: hostCIDR(ip4.String())}); err != nil {
-		return idx, fmt.Errorf("set address: %w", err)
+		return idx, fmt.Errorf(i18n.T("set address: %w"), err)
 	}
 	if err := netlink.LinkSetUp(link); err != nil {
-		return idx, fmt.Errorf("bring up: %w", err)
+		return idx, fmt.Errorf(i18n.T("bring up: %w"), err)
 	}
 	for _, dst := range routes4 {
 		if err := netlink.RouteReplace(tunRoute(idx, dst)); err != nil {
-			return idx, fmt.Errorf("route %s: %w", dst, err)
+			return idx, fmt.Errorf(i18n.T("route %s: %w"), dst, err)
 		}
 	}
 	// IPv6 is best-effort: if it can't be set up (IPv6 disabled), IPv4 still works and IPv6 stays on
 	// its normal path. No DAD: the address is ours alone, and it should be usable immediately.
 	if err := netlink.AddrReplace(link, &netlink.Addr{IPNet: hostCIDR(tunIP6 + "/64"), Flags: unix.IFA_F_NODAD}); err != nil {
-		logx.Printf("warning: IPv6 not captured: %v\n", err)
+		logx.Printf(i18n.T("warning: IPv6 not captured: %v\n"), err)
 	} else {
 		for _, dst := range routes6 {
 			if err := netlink.RouteReplace(tunRoute(idx, dst)); err != nil {
-				logx.Printf("warning: IPv6 route %s: %v\n", dst, err)
+				logx.Printf(i18n.T("warning: IPv6 route %s: %v\n"), dst, err)
 			}
 		}
 	}

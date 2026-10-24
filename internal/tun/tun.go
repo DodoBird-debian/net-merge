@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net-merge/internal/i18n"
 	"net/netip"
 	"strings"
 	"sync"
@@ -99,9 +100,9 @@ func usedNets(skip string) []netip.Prefix {
 func cmdError(name string, args []string, err error, out []byte) error {
 	cmdline := name + " " + strings.Join(args, " ")
 	if msg := strings.Join(strings.Fields(string(out)), " "); msg != "" {
-		return fmt.Errorf("%s (%s: %v)", msg, cmdline, err)
+		return fmt.Errorf(i18n.T("%s (%s: %v)"), msg, cmdline, err)
 	}
-	return fmt.Errorf("%s: %v", cmdline, err)
+	return fmt.Errorf(i18n.T("%s: %v"), cmdline, err)
 }
 
 // openName is what the OS is asked to call the adapter; macOS only accepts "utunN" and picks the number.
@@ -182,7 +183,7 @@ func (t *Tun) open() error {
 
 	dev, err := tun.Open(openName, uint32(t.MTU))
 	if err != nil {
-		return fmt.Errorf("open TUN (%s): %w", openHint, err)
+		return fmt.Errorf(i18n.T("open TUN (%s): %w"), openHint, err)
 	}
 	stk, err := core.CreateStack(&core.Config{
 		LinkEndpoint:     dev,
@@ -229,10 +230,13 @@ func (t *Tun) On() (err error) {
 
 	ip4 := pickNet(usedNets(t.dev.Name()))
 	if ip4.Addr() != tunRange.Addr().Next() {
-		logx.Printf("note: another adapter is on %s, using %s\n", netip.PrefixFrom(tunRange.Addr(), 24), ip4)
+		logx.Printf(i18n.T("note: another adapter is on %s, using %s\n"), netip.PrefixFrom(tunRange.Addr(), 24), ip4)
 	}
 	if t.idx, err = configure(t.dev.Name(), t.MTU, ip4); err != nil {
 		return err
+	}
+	if t.B != nil {
+		t.B.S.Pause(false)
 	}
 	t.on = true
 	return nil
@@ -240,6 +244,9 @@ func (t *Tun) On() (err error) {
 
 // Off stops capturing: with keepDevice it only removes the routes, otherwise it removes the adapter.
 func (t *Tun) Off() {
+	if t.B != nil {
+		t.B.S.Pause(true)
+	}
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	if keepDevice && t.dev != nil {
@@ -255,6 +262,9 @@ func (t *Tun) Off() {
 
 // Close removes everything, including a kept adapter. Call it when the program exits.
 func (t *Tun) Close() {
+	if t.B != nil {
+		t.B.S.Pause(true)
+	}
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.teardown()

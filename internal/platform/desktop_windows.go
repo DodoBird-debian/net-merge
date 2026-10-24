@@ -2,6 +2,7 @@ package platform
 
 import (
 	"fmt"
+	"net-merge/internal/i18n"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,7 +18,7 @@ import (
 func CheckDriver() error {
 	exe, _ := os.Executable()
 	if _, err := os.Stat(filepath.Join(filepath.Dir(exe), "wintun.dll")); err != nil {
-		return fmt.Errorf("wintun.dll not found next to %s", exe)
+		return fmt.Errorf(i18n.T("wintun.dll not found next to %s"), exe)
 	}
 	return nil
 }
@@ -48,7 +49,7 @@ func run(name string, args ...string) error {
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("%s %s: %v: %s", name, strings.Join(args, " "), err, strings.TrimSpace(string(out)))
+		return fmt.Errorf(i18n.T("%s %s: %v: %s"), name, strings.Join(args, " "), err, strings.TrimSpace(string(out)))
 	}
 	return nil
 }

@@ -2,6 +2,7 @@ package nics
 
 import (
 	"fmt"
+	"net-merge/internal/i18n"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -51,7 +52,7 @@ func adapterInfos() (map[int]adapterInfo, error) {
 			}
 			info := adapterInfo{desc: windows.UTF16PtrToString(a.Description)}
 			if !physicalIfType(a.IfType) {
-				info.virtual = fmt.Sprintf("tunnel/virtual interface type %d (%s)", a.IfType, info.desc)
+				info.virtual = fmt.Sprintf(i18n.T("tunnel/virtual interface type %d (%s)"), a.IfType, info.desc)
 			}
 			for g := a.FirstGatewayAddress; g != nil; g = g.Next {
 				if g.Address.Sockaddr == nil {

@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net-merge/internal/engine"
+	"net-merge/internal/i18n"
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync"
 )
 
 const limitsVersion = 1
@@ -45,7 +48,7 @@ func LoadLimits(dir string) (map[string]float64, error) {
 	}
 	var f limitsFile
 	if err := json.Unmarshal(b, &f); err != nil {
-		return nil, fmt.Errorf("%s: %w", LimitsPath(dir), err)
+		return nil, fmt.Errorf(i18n.T("%s: %w"), LimitsPath(dir), err)
 	}
 	limits := make(map[string]float64, len(f.Limits))
 	for name, mbitPerSec := range f.Limits {
@@ -57,17 +60,22 @@ func LoadLimits(dir string) (map[string]float64, error) {
 }
 
 // SaveLimits writes the caps atomically, so a crash mid-write cannot leave a broken file.
+var limitsSaveMu sync.Mutex
+
 func SaveLimits(dir string, limits map[string]float64) error {
-	if err := os.MkdirAll(limitsDir(dir), 0o755); err != nil {
-		return err
-	}
+	limitsSaveMu.Lock()
+	defer limitsSaveMu.Unlock()
+	return saveLimits(dir, limits)
+}
+func CheckpointLimits(dir string, s *engine.Scheduler) error {
+	limitsSaveMu.Lock()
+	defer limitsSaveMu.Unlock()
+	return saveLimits(dir, s.Limits())
+}
+func saveLimits(dir string, limits map[string]float64) error {
 	b, err := json.MarshalIndent(limitsFile{Version: limitsVersion, Limits: limits}, "", "  ")
 	if err != nil {
 		return err
 	}
-	tmp := LimitsPath(dir) + ".tmp"
-	if err := os.WriteFile(tmp, append(b, '\n'), 0o644); err != nil {
-		return err
-	}
-	return os.Rename(tmp, LimitsPath(dir))
+	return AtomicWrite(LimitsPath(dir), append(b, '\n'), 0644)
 }

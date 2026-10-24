@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net-merge/internal/i18n"
 	"os"
 	"os/exec"
 	"strconv"
@@ -92,7 +93,7 @@ func RelaunchElevated(args []string, hidden bool) error {
 	}
 	path, err := exec.LookPath(tool)
 	if err != nil {
-		return fmt.Errorf("%s not found; run net-merge as root or give it CAP_NET_ADMIN (see README)", tool)
+		return fmt.Errorf(i18n.T("%s not found; run net-merge as root or give it CAP_NET_ADMIN (see README)"), tool)
 	}
 	return syscall.Exec(path, append([]string{tool, exe}, args...), os.Environ())
 }
@@ -128,7 +129,7 @@ func ShowError(msg string) {
 // CheckDriver reports whether the kernel's TUN driver is available.
 func CheckDriver() error {
 	if _, err := os.Stat("/dev/net/tun"); err != nil {
-		return fmt.Errorf("/dev/net/tun not found (try: sudo modprobe tun): %w", err)
+		return fmt.Errorf(i18n.T("/dev/net/tun not found (try: sudo modprobe tun): %w"), err)
 	}
 	return nil
 }

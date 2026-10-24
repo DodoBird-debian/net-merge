@@ -1,0 +1,46 @@
+name: community validation
+on:
+  push:
+    branches: ['codex/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: macOS loopback aliases
+        if: runner.os == 'macOS'
+        run: |
+          sudo ifconfig lo0 alias 127.0.0.2/32
+          sudo ifconfig lo0 alias 127.0.0.3/32
+      - run: go vet ./...
+      - run: go test -race -timeout 5m ./...
+      - name: Build
+        run: go build ./cmd/net-merge
+      - name: Install Inno Setup
+        if: runner.os == 'Windows'
+        run: choco install innosetup --no-progress -y
+      - name: Build Windows installer and run existing network smoke test
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          scripts/build.ps1 -Version 0.0.0 -RepoUrl "${{ github.server_url }}/${{ github.repository }}"
+          go build -o dist/winfakeup.exe ./scripts/winfakeup
+          scripts/windows-smoke.ps1 dist/net-merge.exe
+      - name: Upload Windows preview
+        if: runner.os == 'Windows' && success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: community-windows-preview
+          path: |
+            dist/net-merge-setup-*.exe
+            dist/net-merge-*-portable.zip

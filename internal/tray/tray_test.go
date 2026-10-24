@@ -1,6 +1,7 @@
 package tray
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"unicode/utf16"
@@ -90,5 +91,25 @@ func TestLimitTextUsesMbit(t *testing.T) {
 	}
 	if tip := limitTip(0); !strings.Contains(tip, "full speed") {
 		t.Errorf("limitTip(0) = %q, want it to describe no cap", tip)
+	}
+}
+
+func TestUsageTooltipShowsEveryConnectionAndRetainsDisconnectedTotals(t *testing.T) {
+	var rows []engine.SlotStats
+	for i := 0; i < 7; i++ {
+		rows = append(rows, engine.SlotStats{ID: fmt.Sprint(i), Name: fmt.Sprintf("Adapter %d", i), Present: i != 6, SessionBytes: 1_000_000_000, RateIn: 125_000})
+	}
+	tip := usageTooltip("Merging", 750_000, 0, rows, true)
+	for i := 0; i < 7; i++ {
+		if !strings.Contains(tip, fmt.Sprintf("Adapter %d", i)) {
+			t.Fatal("adapter missing", i)
+		}
+	}
+	if !strings.Contains(tip, "7.00 GB") || strings.Count(tip, "1.00 GB") != 7 || strings.Contains(tip, "MB") {
+		t.Fatal(tip)
+	}
+	tip = usageTooltip("Paused", 0, 0, rows, false)
+	if !strings.Contains(tip, "Paused") || !strings.Contains(tip, "7.00 GB") || strings.Contains(tip, "↓1.0") {
+		t.Fatal("paused tooltip must freeze usage and show zero relayed speed", tip)
 	}
 }

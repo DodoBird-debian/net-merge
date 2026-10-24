@@ -2,6 +2,7 @@ package tray
 
 import (
 	"context"
+	"net-merge/internal/i18n"
 	"time"
 
 	"net-merge/internal/logx"
@@ -29,7 +30,7 @@ func (u *trayUI) watchUpdates() {
 	for {
 		latest, err := latestRelease()
 		if err != nil {
-			logx.Printf("update check: %v (next try in %s)\n", err, retry)
+			logx.Printf(i18n.T("update check: %v (next try in %s)\n"), err, retry)
 			time.Sleep(retry)
 			retry = min(2*retry, updateMax)
 			continue
@@ -51,8 +52,8 @@ func latestRelease() (string, error) {
 
 // showUpdate keeps the version in the tooltip, so a bug report still has it.
 func (u *trayUI) showUpdate(latest string) {
-	logx.Printf("update check: %s is available\n", latest)
-	u.versionItem.SetTitle(updateLabel(latest))
-	u.versionItem.SetTooltip("You are running " + versionLabel(u.version) +
-		". Click to open the " + versionLabel(latest) + " release page on GitHub.")
+	select {
+	case u.updates <- latest:
+	default:
+	}
 }

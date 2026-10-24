@@ -29,7 +29,7 @@ func probe(sl *Slot, f Family) bool {
 		network = "tcp6"
 	}
 	for _, t := range probeTargets[f] {
-		d := net.Dialer{LocalAddr: &net.TCPAddr{IP: ip}, Control: nics.ForceEgress(sl.Index, f == Fam6), Timeout: probeTimeout}
+		d := net.Dialer{LocalAddr: &net.TCPAddr{IP: ip}, Control: nics.ForceEgress(sl.ifIndex(), f == Fam6), Timeout: probeTimeout}
 		if c, err := d.Dial(network, t); err == nil {
 			c.Close()
 			return true
