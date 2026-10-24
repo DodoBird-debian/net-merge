@@ -5,6 +5,12 @@ on:
     branches: ['codex/**']
     paths: ['mobile/**', '.github/workflows/phone-builds.yml']
   workflow_call:
+    inputs:
+      version:
+        type: string
+        default: '0.4.0'
+env:
+  APP_VERSION: ${{ inputs.version || '0.4.0' }}
 permissions:
   contents: read
 jobs:
@@ -20,7 +26,7 @@ jobs:
         run: sudo ip -6 addr add 2001:db8::1/128 dev lo
       - run: go vet ./... && go test -race -timeout 5m ./...
         env:
-          NETMERGE_TEST_IP6: '2001:db8::1' 
+          NETMERGE_TEST_IP6: '2001:db8::1'
         working-directory: mobile/android/golib
       - run: python3 scripts/check-mobile-catalogs.py
   android:
@@ -57,13 +63,13 @@ jobs:
         run: |
           ./gradlew --no-daemon assembleDebug assembleRelease lintRelease
           mkdir -p ../../dist
-          cp app/build/outputs/apk/release/app-release.apk ../../dist/net-merge-0.4.0-android.apk
-          cp app/build/outputs/apk/debug/app-debug.apk ../../dist/net-merge-0.4.0-android-debug.apk
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs ../../dist/net-merge-0.4.0-android.apk
+          cp app/build/outputs/apk/release/app-release.apk ../../dist/net-merge-$APP_VERSION-android.apk
+          cp app/build/outputs/apk/debug/app-debug.apk ../../dist/net-merge-$APP_VERSION-android-debug.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs ../../dist/net-merge-$APP_VERSION-android.apk
       - uses: actions/upload-artifact@v4
         with:
           name: build-android
-          path: dist/net-merge-0.4.0-android.apk
+          path: dist/net-merge-${{ env.APP_VERSION }}-android.apk
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
@@ -120,7 +126,7 @@ jobs:
           target: google_apis
           profile: pixel_6
           disable-animations: true
-          script: python3 scripts/android-smoke.py smoke-apk/net-merge-0.4.0-android-debug.apk
+          script: python3 scripts/android-smoke.py smoke-apk/net-merge-$APP_VERSION-android-debug.apk
       - uses: actions/upload-artifact@v4
         if: always()
         with:

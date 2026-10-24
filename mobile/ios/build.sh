@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")"
+version=${APP_VERSION:-0.4.0}
+versionCode=$(python3 -c 'import sys; a,b,c=map(int,sys.argv[1].split(".")); print(a*1000000+b*10000+c*100)' "$version")
 mkdir -p Frameworks
 (
  cd ../android/golib
@@ -10,7 +12,7 @@ mkdir -p Frameworks
 )
 file Frameworks/Netmerge.xcframework/ios-arm64/Netmerge.framework/Netmerge
 xcodegen generate
-xcodebuild -project NetMerge.xcodeproj -scheme NetMerge -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+xcodebuild -project NetMerge.xcodeproj -scheme NetMerge -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build CODE_SIGNING_ALLOWED=NO MARKETING_VERSION="$version" CURRENT_PROJECT_VERSION="$versionCode" build
 mkdir -p build/ipa/Payload ../../dist
 cp -R build/Build/Products/Release-iphoneos/NetMerge.app build/ipa/Payload/
-(cd build/ipa && zip -qry ../../../../dist/net-merge-0.4.0-ios-arm64-unsigned.ipa Payload)
+(cd build/ipa && zip -qry "../../../../dist/net-merge-$version-ios-arm64-unsigned.ipa" Payload)

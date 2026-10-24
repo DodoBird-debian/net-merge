@@ -10,12 +10,14 @@ android {
     namespace = "org.netmerge.android"
     compileSdk = 36
 
+    val appVersion = System.getenv("APP_VERSION") ?: "0.4.0"
+    val parts = appVersion.split('.').map { it.toInt() }
     defaultConfig {
         applicationId = "org.iraqpc.netmerge"
         minSdk = 26
         targetSdk = 36
-        versionCode = 40000
-        versionName = "0.4.0"
+        versionCode = parts[0] * 1000000 + parts[1] * 10000 + parts[2] * 100
+        versionName = appVersion
     }
 
     // Releases are signed with the net-merge key when CI has it (ANDROID_KEYSTORE, from the repo's
