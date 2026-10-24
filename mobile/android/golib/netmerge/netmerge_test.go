@@ -1,9 +1,12 @@
 package netmerge
 
 import (
+	"context"
 	"encoding/json"
+	"net"
 	"netmerge-android/internal/engine"
 	"testing"
+	"time"
 )
 
 func resetScheduler() {
@@ -81,5 +84,61 @@ func TestSystemEstimateSeedsWeights(t *testing.T) {
 		if s.Present && s.Weight != 1 {
 			t.Fatalf("even split: %s weight %v", s.Name, s.Weight)
 		}
+	}
+}
+
+func TestNetworkHandleReplacementClosesFlowsPreservesAllowance(t *testing.T) {
+	resetScheduler()
+	listener, err := net.Listen("tcp4", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer listener.Close()
+	go func() {
+		c, e := listener.Accept()
+		if e == nil {
+			defer c.Close()
+			buf := make([]byte, 1)
+			for {
+				n, e := c.Read(buf)
+				if n > 0 {
+					c.Write(buf[:n])
+				}
+				if e != nil {
+					return
+				}
+			}
+		}
+	}()
+	js := `[{"id":"wifi-interface","name":"Wi-Fi","handle":"101","v4":true}]`
+	if err := SetNetworks(js); err != nil {
+		t.Fatal(err)
+	}
+	if err := sched.SetQuota("wifi-interface", 100000, false); err != nil {
+		t.Fatal(err)
+	}
+	c, err := bal.DialPinned(context.Background(), "127.0.0.1", listener.Addr().(*net.TCPAddr).Port)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+	c.SetDeadline(time.Now().Add(time.Second))
+	if _, err = c.Write([]byte{42}); err != nil {
+		t.Fatal(err)
+	}
+	b := make([]byte, 1)
+	if _, err = c.Read(b); err != nil {
+		t.Fatal(err)
+	}
+	before := sched.Snapshot()[0]
+	if err := SetNetworks(`[{"id":"wifi-interface","name":"Renamed Wi-Fi","handle":"102","v4":true}]`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = c.Read(b); err == nil {
+		t.Fatal("old network handle flow was not closed")
+	}
+	after := sched.Snapshot()[0]
+	if after.ID != before.ID || after.SessionBytes != before.SessionBytes || after.QuotaUsedBytes != before.QuotaUsedBytes || after.QuotaBytes != before.QuotaBytes {
+		t.Fatalf("replacement reset usage: before=%+v after=%+v", before, after)
 	}
 }

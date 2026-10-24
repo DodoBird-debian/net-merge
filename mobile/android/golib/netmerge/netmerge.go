@@ -73,7 +73,9 @@ func SetNetworks(js string) error {
 			idx = len(indexes) + 1
 			indexes[n.ID] = idx
 		}
-		nics.SetHandle(idx, h)
+		if nics.SetHandle(idx, h) {
+			sched.CloseAdapter(n.ID)
+		}
 		w := n.Weight
 		if w <= 0 {
 			w = 1

@@ -35,4 +35,6 @@
   <string name="up">متصل</string>
   <string name="no_internet">لا يوجد إنترنت</string>
   <string name="link">https://www.facebook.com/groups/1088749137864406/</string>
+  <string name="wifi">واي فاي</string>
+  <string name="mobile_data">البيانات الخلوية</string>
 </resources>

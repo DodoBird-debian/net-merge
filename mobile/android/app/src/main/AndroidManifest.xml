@@ -6,7 +6,6 @@
     <!-- Keeps mobile data up while Wi-Fi is connected (ConnectivityManager.requestNetwork). -->
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SYSTEM_EXEMPTED" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
@@ -29,7 +28,7 @@
         <service
             android:name=".MergeVpnService"
             android:exported="false"
-            android:foregroundServiceType="systemExempted|specialUse"
+            android:foregroundServiceType="specialUse"
             android:permission="android.permission.BIND_VPN_SERVICE">
             <intent-filter>
                 <action android:name="android.net.VpnService" />

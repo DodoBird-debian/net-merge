@@ -32,6 +32,11 @@ data class Stats(
             else -> "no internet"
         }
 
+    fun displayName(ctx: android.content.Context): String = when {
+        name.startsWith("Mobile data") -> ctx.getString(R.string.mobile_data) + name.removePrefix("Mobile data")
+        name.startsWith("Wi-Fi") -> ctx.getString(R.string.wifi) + name.removePrefix("Wi-Fi")
+        else -> name
+    }
     companion object {
         fun parse(json: String): List<Stats> {
             val arr = runCatching { JSONArray(json) }.getOrNull() ?: return emptyList()

@@ -36,7 +36,7 @@ fun MainScreen(phase: Engine.Phase, stats: List<Stats>, history: Map<String,List
         }
         items(stats,key={it.id}) { s ->
             Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(12.dp)) {
-                Text(ltr(s.name),style=MaterialTheme.typography.titleMedium)
+                Text(s.displayName(ctx),style=MaterialTheme.typography.titleMedium)
                 Text(stringResource(when { !s.present->R.string.disconnected; s.quotaExhausted->R.string.exhausted; s.status=="up"->R.string.up; s.status=="checking"->R.string.checking; else->R.string.no_internet }))
                 Text(ltr("↓ ${Stats.rate(s.rateIn)}   ↑ ${Stats.rate(s.rateOut)}"))
                 Text(stringResource(R.string.used_start,ltr(Stats.gb(s.sessionBytes))))
@@ -60,7 +60,7 @@ fun MainScreen(phase: Engine.Phase, stats: List<Stats>, history: Map<String,List
         var speedUnlimited by remember(s.id) { mutableStateOf(s.limitMbps==0.0) }
         var dataUnlimited by remember(s.id) { mutableStateOf(s.quotaBytes==0L) }
         AlertDialog(onDismissRequest={editing=null}, title={Text(stringResource(R.string.limits))},text={Column {
-            Text(ltr(s.name))
+            Text(s.displayName(ctx))
             OutlinedTextField(value=speed,onValueChange={speed=it},enabled=!speedUnlimited,label={Text(stringResource(R.string.speed))},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Decimal))
             Row { Checkbox(speedUnlimited,{speedUnlimited=it}); Text(stringResource(R.string.unlimited)) }
             OutlinedTextField(value=allowance,onValueChange={allowance=it},enabled=!dataUnlimited,label={Text(stringResource(R.string.allowance))},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Decimal))

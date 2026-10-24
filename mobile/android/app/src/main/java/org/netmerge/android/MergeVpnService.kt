@@ -216,12 +216,7 @@ class MergeVpnService : VpnService() {
         )
         val n = buildNotification(Engine.localized(applicationContext).getString(R.string.notif_waiting))
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            // systemExempted covers active VPN apps; fall back to specialUse if the system disagrees.
-            try {
-                startForeground(NOTIF_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED)
-            } catch (e: SecurityException) {
-                startForeground(NOTIF_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
-            }
+            startForeground(NOTIF_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
         } else {
             startForeground(NOTIF_ID, n)
         }
@@ -250,7 +245,7 @@ class MergeVpnService : VpnService() {
         if (Engine.phase.value != Engine.Phase.ON) return
         val stats = Engine.stats.value
         val text = if (stats.isEmpty()) Engine.localized(applicationContext).getString(R.string.notif_waiting)
-        else stats.joinToString("\n") { "${it.name}: ${Stats.rate(it.rateIn + it.rateOut)} · ${Engine.localized(applicationContext).getString(R.string.used_start, Stats.gb(it.sessionBytes))}" } + "\n" + Engine.localized(applicationContext).getString(R.string.total_used, Stats.gb(stats.sumOf { it.sessionBytes }))
+        else stats.joinToString("\n") { "${it.displayName(Engine.localized(applicationContext))}: ${Stats.rate(it.rateIn + it.rateOut)} · ${Engine.localized(applicationContext).getString(R.string.used_start, Stats.gb(it.sessionBytes))}" } + "\n" + Engine.localized(applicationContext).getString(R.string.total_used, Stats.gb(stats.sumOf { it.sessionBytes }))
         val statusText = if (stats.any { it.present } && stats.filter { it.present }.all { it.quotaExhausted }) Engine.localized(applicationContext).getString(R.string.exhausted) + "\n" + text else text
         getSystemService(NotificationManager::class.java).notify(NOTIF_ID, buildNotification(statusText))
     }

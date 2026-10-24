@@ -35,4 +35,6 @@
   <string name="up">Connected</string>
   <string name="no_internet">No internet</string>
   <string name="link">https://www.facebook.com/groups/1088749137864406/</string>
+  <string name="wifi">Wi-Fi</string>
+  <string name="mobile_data">Mobile data</string>
 </resources>

@@ -25,7 +25,10 @@ type Nic struct {
 var handles sync.Map // int -> uint64 (android.net.Network#getNetworkHandle)
 
 // SetHandle maps an adapter index to an Android network handle.
-func SetHandle(index int, handle uint64) { handles.Store(index, handle) }
+func SetHandle(index int, value uint64) bool {
+	previous, existed := handles.Swap(index, value)
+	return existed && previous.(uint64) != value
+}
 
 // DropHandle forgets an index once its network is gone.
 func DropHandle(index int) { handles.Delete(index) }
