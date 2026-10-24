@@ -12,6 +12,7 @@ class MergeTileService : TileService() {
 
     override fun onStartListening() = refresh()
 
+    @android.annotation.SuppressLint("StartActivityAndCollapseDeprecated") // Only used below Android 14, where PendingIntent overload is unavailable.
     override fun onClick() {
         if (Engine.phase.value != Engine.Phase.OFF) {
             MergeVpnService.stop(this)

@@ -14,8 +14,7 @@ targets:
   NetMerge:
     type: application
     platform: iOS
-    sources: [App, Shared]
-    resources: [en.lproj, ar.lproj]
+    sources: [App, Shared, en.lproj, ar.lproj]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: org.iraqpc.netmerge.ios
@@ -30,8 +29,7 @@ targets:
   PacketTunnel:
     type: app-extension
     platform: iOS
-    sources: [Tunnel, Shared]
-    resources: [en.lproj, ar.lproj]
+    sources: [Tunnel, Shared, en.lproj, ar.lproj]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: org.iraqpc.netmerge.ios.tunnel
