@@ -91,7 +91,7 @@ jobs:
           done
           lipo -create -output net-merge net-merge-arm64 net-merge-amd64
           codesign --force --sign - net-merge
-          lipo -verify_arch arm64 x86_64 net-merge
+          lipo net-merge -verify_arch arm64 x86_64
           mkdir dist
           tar -czf "dist/net-merge-$APP_VERSION-macos-universal.tar.gz" net-merge LICENSE THIRD-PARTY-NOTICES.md
       - uses: actions/upload-artifact@v4
