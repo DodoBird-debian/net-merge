@@ -4,6 +4,9 @@
 
 <h1 align="center">net-merge</h1>
 
+> Rebranded for [Iraq PC Community on Facebook](https://www.facebook.com/groups/1088749137864406/).
+> Based on [net-merge by Rohit Mahto](https://github.com/rohit267/net-merge). The original MIT license and copyright notice are preserved.
+
 <p align="center">
   <strong>Use all your internet connections at the same time.</strong><br>
   Combine Wi-Fi, Ethernet and phone hotspots, so downloads, games and browsers get the speed of every connection added up.
