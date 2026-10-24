@@ -26,6 +26,14 @@ jobs:
           sudo ifconfig lo0 alias 127.0.0.3/32
       - run: go vet ./...
       - run: go test -race -timeout 5m ./...
+      - name: Upload native UI screenshots
+        if: runner.os == 'Windows' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-ui-screenshots
+          path: ui-screenshots/*.png
+          if-no-files-found: warn
+
       - name: Build
         run: go build ./cmd/net-merge
       - name: Install Inno Setup
@@ -47,10 +55,3 @@ jobs:
             dist/net-merge-setup-*.exe
             dist/net-merge-*-portable.zip
 
-      - name: Upload native UI screenshots
-        if: runner.os == 'Windows' && always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: native-ui-screenshots
-          path: ui-screenshots/*.png
-          if-no-files-found: warn
