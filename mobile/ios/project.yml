@@ -14,7 +14,7 @@ targets:
   NetMerge:
     type: application
     platform: iOS
-    sources: [App, Shared, en.lproj, ar.lproj]
+    sources: [App, Shared]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: org.iraqpc.netmerge.ios
@@ -29,7 +29,7 @@ targets:
   PacketTunnel:
     type: app-extension
     platform: iOS
-    sources: [Tunnel, Shared, en.lproj, ar.lproj]
+    sources: [Tunnel, Shared]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: org.iraqpc.netmerge.ios.tunnel
@@ -39,4 +39,4 @@ targets:
         SKIP_INSTALL: YES
     dependencies:
       - framework: Frameworks/Netmerge.xcframework
-        embed: true
+        embed: false

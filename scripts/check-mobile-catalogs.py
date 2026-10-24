@@ -15,7 +15,7 @@ for key in re.findall(r'R.string.(\w+)', source):
     assert key in catalogs[0], f'missing Android text: {key}'
 ios = []
 for lang in ('en','ar'):
-    text = (root/f'mobile/ios/{lang}.lproj/Localizable.strings').read_text()
+    text = (root/f'mobile/ios/Shared/{lang}.lproj/Localizable.strings').read_text()
     values = {}
     for line in text.splitlines():
         key, value = line.removesuffix(';').split(' = ',1)

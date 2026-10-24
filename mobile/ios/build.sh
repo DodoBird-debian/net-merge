@@ -8,6 +8,7 @@ mkdir -p Frameworks
  export PATH="$PWD/.bin:$PATH"
  gomobile bind -v -trimpath -ldflags='-s -w' -target=ios/arm64 -o ../../ios/Frameworks/Netmerge.xcframework ./netmerge
 )
+file Frameworks/Netmerge.xcframework/ios-arm64/Netmerge.framework/Netmerge
 xcodegen generate
 xcodebuild -project NetMerge.xcodeproj -scheme NetMerge -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
 mkdir -p build/ipa/Payload ../../dist
