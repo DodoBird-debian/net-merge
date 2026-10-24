@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")"
+mkdir -p Frameworks
+(
+ cd ../android/golib
+ GOBIN="$PWD/.bin" go install golang.org/x/mobile/cmd/gomobile golang.org/x/mobile/cmd/gobind
+ export PATH="$PWD/.bin:$PATH"
+ gomobile bind -v -trimpath -ldflags='-s -w' -target=ios/arm64 -o ../../ios/Frameworks/Netmerge.xcframework ./netmerge
+)
+xcodegen generate
+xcodebuild -project NetMerge.xcodeproj -scheme NetMerge -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+mkdir -p build/ipa/Payload ../../dist
+cp -R build/Build/Products/Release-iphoneos/NetMerge.app build/ipa/Payload/
+(cd build/ipa && zip -qry ../../../../dist/net-merge-0.4.0-ios-arm64-unsigned.ipa Payload)

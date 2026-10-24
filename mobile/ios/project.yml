@@ -1,0 +1,44 @@
+name: NetMerge
+options:
+  bundleIdPrefix: org.iraqpc.netmerge
+  deploymentTarget:
+    iOS: '16.0'
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    MARKETING_VERSION: '0.4.0'
+    CURRENT_PROJECT_VERSION: 40000
+    CODE_SIGNING_ALLOWED: NO
+    TARGETED_DEVICE_FAMILY: '1,2'
+targets:
+  NetMerge:
+    type: application
+    platform: iOS
+    sources: [App, Shared]
+    resources: [en.lproj, ar.lproj]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.iraqpc.netmerge.ios
+        INFOPLIST_KEY_CFBundleDisplayName: net-merge
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+        CODE_SIGN_ENTITLEMENTS: App/App.entitlements
+    dependencies:
+      - target: PacketTunnel
+        embed: true
+  PacketTunnel:
+    type: app-extension
+    platform: iOS
+    sources: [Tunnel, Shared]
+    resources: [en.lproj, ar.lproj]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.iraqpc.netmerge.ios.tunnel
+        INFOPLIST_FILE: Tunnel/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Tunnel/Tunnel.entitlements
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+    dependencies:
+      - framework: Frameworks/Netmerge.xcframework
+        embed: true

@@ -1,0 +1,97 @@
+name: phone builds
+on:
+  workflow_dispatch:
+  push:
+    branches: ['codex/**']
+    paths: ['mobile/**', '.github/workflows/phone-builds.yml']
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  engine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: mobile/android/golib/go.mod
+          cache-dependency-path: mobile/android/golib/go.sum
+      - run: go vet ./... && go test -race -timeout 5m ./...
+        working-directory: mobile/android/golib
+      - run: python3 scripts/check-mobile-catalogs.py
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: mobile/android/golib/go.mod
+          cache-dependency-path: mobile/android/golib/go.sum
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build Go AAR
+        working-directory: mobile/android
+        env:
+          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_LATEST_HOME }}
+        run: scripts/build-go.sh
+      - name: Install community release key
+        env:
+          KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$KEY"
+          echo "$KEY" | base64 -d > "$RUNNER_TEMP/community.p12"
+      - name: Build Android packages
+        working-directory: mobile/android
+        env:
+          ANDROID_KEYSTORE: ${{ runner.temp }}/community.p12
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: netmerge-community
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          ./gradlew --no-daemon assembleDebug assembleRelease lintRelease
+          mkdir -p ../../dist
+          cp app/build/outputs/apk/release/app-release.apk ../../dist/net-merge-0.4.0-android.apk
+          cp app/build/outputs/apk/debug/app-debug.apk ../../dist/net-merge-0.4.0-android-debug.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs ../../dist/net-merge-0.4.0-android.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-android
+          path: dist/net-merge-0.4.0-android.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-debug
+          path: dist/*debug.apk
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-lint
+          path: mobile/android/app/build/reports/lint-results-release.*
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: mobile/android/golib/go.mod
+          cache-dependency-path: mobile/android/golib/go.sum
+      - run: brew install xcodegen
+      - run: mobile/ios/build.sh
+      - name: Verify unsigned archive
+        run: |
+          unzip -l dist/*unsigned.ipa
+          test -d mobile/ios/build/ipa/Payload/NetMerge.app/PlugIns/PacketTunnel.appex
+          test ! -f mobile/ios/build/ipa/Payload/NetMerge.app/embedded.mobileprovision
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-ios
+          path: dist/*unsigned.ipa
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-headers
+          path: mobile/ios/Frameworks/**/*.h
