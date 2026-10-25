@@ -8,7 +8,7 @@ on:
     inputs:
       version:
         type: string
-      default: '0.4.1'
+        default: '0.4.1'
 env:
   APP_VERSION: ${{ inputs.version || '0.4.1' }}
 permissions:
