@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise the installed Android app, VPN start, both locales and language persistence."""
 from pathlib import Path
+import re
 import subprocess
 import sys
 import time
@@ -24,11 +25,35 @@ def expect(phrase):
 def shot(name):
     (out/(name+'.png')).write_bytes(adb('exec-out','screencap','-p',binary=True))
 def tap_text(root,phrase,index=0):
-    import re
     matches=[n for n in root.iter() if n.get('text') == phrase or n.get('content-desc') == phrase]
     assert matches, phrase
-    coords=list(map(int,re.findall(r'\d+',matches[index].get('bounds'))))
-    adb('shell','input','tap',str((coords[0]+coords[2])//2),str((coords[1]+coords[3])//2))
+    tap_node(matches[index])
+def center(n):
+    coords=list(map(int,re.findall(r'\d+',n.get('bounds'))))
+    return (coords[0]+coords[2])//2,(coords[1]+coords[3])//2
+def tap_node(n):
+    x,y=center(n)
+    adb('shell','input','tap',str(x),str(y))
+def scroll_to_top():
+    for _ in range(4):
+        adb('shell','input','swipe','500','600','500','1800','250')
+def localized_name(name):
+    if name.startswith('Wi-Fi'): return 'واي فاي'+name.removeprefix('Wi-Fi')
+    if name.startswith('Mobile data'): return 'البيانات'+name.removeprefix('Mobile data')
+    return name
+def open_limits(name):
+    scroll_to_top()
+    for _ in range(8):
+        root=dump()
+        labels=[n for n in root.iter() if n.get('text')==name or n.get('content-desc')==name]
+        buttons=[n for n in root.iter() if n.get('text')=='حد الاستخدام' or n.get('content-desc')=='حد الاستخدام']
+        for label in labels:
+            below=[n for n in buttons if center(n)[1]>center(label)[1]]
+            if below:
+                tap_node(min(below,key=lambda n:center(n)[1]))
+                return
+        adb('shell','input','swipe','500','1800','500','800','300')
+    raise AssertionError(f'No visible limits button for {name}')
 adb('wait-for-device')
 adb('install','-r',sys.argv[1])
 adb('shell','appops','set',pkg,'ACTIVATE_VPN','allow')
@@ -48,16 +73,11 @@ records = json.loads(state)
 assert records['version'] == 1 and records['adapters'], state
 # Set real per-connection caps through the native settings UI. Existing relayed
 # traffic has already consumed more than a byte, so this must exhaust each link.
-for index in range(len(records['adapters'])):
-    root = dump()
-    tap_text(root,'حد الاستخدام',index)
+for record in records['adapters'].values():
+    open_limits(localized_name(record['name']))
     root = expect('حد السرعة')
     boxes=[n for n in root.iter() if n.get('checkable') == 'true']
     assert len(boxes) == 2, ET.tostring(root,encoding='unicode')
-    import re
-    def tap_node(n):
-        c=list(map(int,re.findall(r'\d+',n.get('bounds'))))
-        adb('shell','input','tap',str((c[0]+c[2])//2),str((c[1]+c[3])//2))
     for box in boxes: tap_node(box)
     fields=[n for n in dump().iter() if n.get('class') == 'android.widget.EditText']
     assert len(fields)==2
@@ -68,6 +88,7 @@ for index in range(len(records['adapters'])):
 state=adb('exec-out','run-as',pkg,'cat','files/quotas.json')
 records=json.loads(state)
 assert all(v['limit_bytes']==1 and v['used_bytes']>=1 for v in records['adapters'].values()), state
+scroll_to_top()
 expect('نفدت حصص البيانات'); expect('يعمل'); shot('android-arabic-exhausted')
 # A manual reset while paused must preserve the configured allowance and be confirmed.
 tap_text(dump(),'إيقاف مؤقت'); expect('متوقف مؤقتًا')
