@@ -46,6 +46,7 @@ class MainActivity : ComponentActivity() {
                     onToggle = ::toggle,
                     onEvenSplit = { Engine.setEvenSplit(this, it) },
                     onLanguage = { Engine.setLanguage(this, it); recreate() },
+                    onResetAll = ::resetAll,
                 )
             }
         }
@@ -67,5 +68,15 @@ class MainActivity : ComponentActivity() {
         }
         val consent = VpnService.prepare(this)
         if (consent != null) vpnConsent.launch(consent) else MergeVpnService.start(this)
+    }
+
+    private fun resetAll() {
+        try {
+            netmerge.Netmerge.resetAllConnections()
+            Engine.sample()
+            MergeVpnService.refreshConnections(this)
+        } catch (e: Exception) {
+            Engine.setError(e)
+        }
     }
 }

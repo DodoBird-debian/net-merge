@@ -278,11 +278,19 @@ func main() {
 		if err := platform.Autostart(args[0]); err != nil {
 			die(err)
 		}
-	case "_icon": // build helper: writes the tray icon as an .ico
+	case "_icon": // build helper: writes the branded application icon as an .ico
 		if len(args) != 1 {
 			os.Exit(2)
 		}
-		if err := os.WriteFile(args[0], icon.ICO(true), 0o644); err != nil {
+		pngData, err := os.ReadFile("packaging/icons/hicolor/256x256/apps/net-merge.png")
+		if err != nil {
+			die(err)
+		}
+		iconData, err := icon.ICOFromPNG(pngData)
+		if err != nil {
+			die(err)
+		}
+		if err := os.WriteFile(args[0], iconData, 0o644); err != nil {
 			die(err)
 		}
 	case "tray":

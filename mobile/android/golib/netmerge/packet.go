@@ -61,11 +61,20 @@ func (p *PacketCore) RefreshNetworks() error {
 		return err
 	}
 	var list []nics.Nic
+	cellularAdded := false
 	for _, it := range interfaces {
 		if it.Flags&net.FlagUp == 0 || !(it.Name == "en0" || strings.HasPrefix(it.Name, "pdp_ip")) {
 			continue
 		}
-		n := nics.Nic{ID: it.Name, Name: it.Name, Index: it.Index, Weight: 1}
+		name := it.Name
+		if strings.HasPrefix(it.Name, "pdp_ip") {
+			if cellularAdded {
+				continue
+			}
+			cellularAdded = true
+			name = "Mobile data"
+		}
+		n := nics.Nic{ID: it.Name, Name: name, Index: it.Index, Weight: 1}
 		addrs, e := it.Addrs()
 		if e != nil {
 			continue

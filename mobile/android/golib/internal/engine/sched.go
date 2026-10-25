@@ -258,6 +258,30 @@ func (s *Scheduler) Update(nics []nics.Nic) {
 			}
 		}
 		if found == nil {
+			// Android can give the same physical link a new interface name after its radio
+			// reconnects. Reuse the departed slot with the same visible connection name so its
+			// session total, allowance and speed cap follow the returning connection.
+			var stale *Slot
+			for _, sl := range s.slots {
+				if sl.present || sl.Name != n.Name {
+					continue
+				}
+				if stale != nil {
+					stale = nil // Ambiguous duplicate history: keep it archived rather than guess.
+					break
+				}
+				stale = sl
+			}
+			if stale != nil {
+				s.rekeySlotLocked(stale, nicKey(n), n.Name)
+				found = stale
+			} else if oldID := s.quotaRecordIDLocked(n.Name, nicKey(n)); oldID != "" {
+				// On process restart only the persisted allowance record can identify a renamed
+				// cellular interface. Move it before creating the live slot.
+				s.rekeyRecordLocked(oldID, nicKey(n), n.Name)
+			}
+		}
+		if found == nil {
 			sl := &Slot{Name: n.Name, Index: n.Index, key: nicKey(n), notify: s.QuotaChanged, weight: [2]float64{n.Weight, n.Weight}, present: true}
 			sl.addr.Store(na)
 			sl.setLimit(s.limitFor(sl.key, n.Name))
@@ -294,6 +318,75 @@ func (s *Scheduler) Update(nics []nics.Nic) {
 	}
 	// Retain departed adapters: session totals and manual allowances must survive reconnects.
 
+}
+
+// rekeySlotLocked carries saved state from a departed network identity to its returning link.
+// Caller holds s.mu. Session counters stay on the slot and therefore remain part of the total.
+func (s *Scheduler) rekeySlotLocked(sl *Slot, id, name string) {
+	oldID := sl.key
+	if oldID == id {
+		return
+	}
+	s.rekeyLimitLocked(oldID, id)
+	oldQuota := sl.quotaSnapshot()
+	newQuota, hadNewQuota := s.quotaRecords[id]
+	if hadNewQuota {
+		oldQuota = mergeQuotaRecords(oldQuota, newQuota, name)
+	}
+	delete(s.quotaRecords, oldID)
+	oldQuota.Name = name
+	sl.quota.mu.Lock()
+	sl.quota.limit, sl.quota.used = oldQuota.LimitBytes, oldQuota.UsedBytes
+	sl.quota.mu.Unlock()
+	s.quotaRecords[id] = oldQuota
+	sl.key, sl.Name = id, name
+	sl.setLimit(s.limitFor(id, name))
+}
+
+func (s *Scheduler) quotaRecordIDLocked(name, except string) string {
+	var found string
+	for id, record := range s.quotaRecords {
+		if id == except || record.Name != name {
+			continue
+		}
+		if found != "" {
+			return ""
+		}
+		found = id
+	}
+	return found
+}
+
+func (s *Scheduler) rekeyRecordLocked(oldID, id, name string) {
+	oldQuota := s.quotaRecords[oldID]
+	if newQuota, ok := s.quotaRecords[id]; ok {
+		oldQuota = mergeQuotaRecords(oldQuota, newQuota, name)
+	}
+	s.rekeyLimitLocked(oldID, id)
+	delete(s.quotaRecords, oldID)
+	oldQuota.Name = name
+	s.quotaRecords[id] = oldQuota
+}
+
+func (s *Scheduler) rekeyLimitLocked(oldID, id string) {
+	oldLimit, hadOldLimit := s.limits[oldID]
+	newLimit, hadNewLimit := s.limits[id]
+	delete(s.limits, oldID)
+	if hadOldLimit && (!hadNewLimit || oldLimit < newLimit) {
+		s.limits[id] = oldLimit
+		newLimit = oldLimit
+	} else if hadNewLimit {
+		s.limits[id] = newLimit
+	}
+}
+
+func mergeQuotaRecords(a, b QuotaRecord, name string) QuotaRecord {
+	a.Name = name
+	a.UsedBytes += b.UsedBytes
+	if a.LimitBytes == 0 || (b.LimitBytes > 0 && b.LimitBytes < a.LimitBytes) {
+		a.LimitBytes = b.LimitBytes
+	}
+	return a
 }
 
 // A NIC counts as measured once it has carried this much (bytes/s, about 0.4 Mbit/s).

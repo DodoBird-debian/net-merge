@@ -24,9 +24,11 @@ var (
 	bal        = engine.NewBalancer(sched)
 	dev        tun.Tun
 	stop       chan struct{}
-	indexes    = map[string]int{} // network name -> stable index
-	last       []nics.Nic         // last list given to the scheduler, to re-apply weights
-	lastJS     string             // last SetNetworks input, re-applied when the mode changes
+	indexes    = map[string]int{}   // network identity -> stable index
+	indexNames = map[string]string{} // identity -> last visible name, for reclaiming stale slots
+	nextIndex  int
+	last       []nics.Nic          // last list given to the scheduler, to re-apply weights
+	lastJS     string              // last SetNetworks input, re-applied when the mode changes
 	auto       = true
 	stateDir   string
 	configured bool
@@ -55,6 +57,13 @@ func SetNetworks(js string) error {
 	}
 	mu.Lock()
 	defer mu.Unlock()
+	activeIDs := make(map[string]bool, len(in))
+	for i := range in {
+		if in[i].ID == "" {
+			in[i].ID = in[i].Name
+		}
+		activeIDs[in[i].ID] = true
+	}
 	var maxDown float64
 	for _, n := range in {
 		maxDown = max(maxDown, n.DownKbps)
@@ -65,13 +74,28 @@ func SetNetworks(js string) error {
 		if err != nil {
 			return errors.New("bad network handle " + n.Handle)
 		}
-		if n.ID == "" {
-			n.ID = n.Name
-		}
 		idx, ok := indexes[n.ID]
+		oldID := ""
 		if !ok {
-			idx = len(indexes) + 1
+			for candidate, name := range indexNames {
+				if name == n.Name && !activeIDs[candidate] {
+					oldID, idx = candidate, indexes[candidate]
+					delete(indexes, candidate)
+					delete(indexNames, candidate)
+					break
+				}
+			}
+			if oldID == "" {
+				nextIndex++
+				idx = nextIndex
+			}
 			indexes[n.ID] = idx
+			indexNames[n.ID] = n.Name
+		}
+		indexNames[n.ID] = n.Name
+		if oldID != "" {
+			// Reuse the vanished adapter's handle slot, but close sockets before rebinding it.
+			sched.CloseAdapter(oldID)
 		}
 		if nics.SetHandle(idx, h) {
 			sched.CloseAdapter(n.ID)
@@ -94,6 +118,11 @@ func SetNetworks(js string) error {
 			nic.IP6 = net.IPv6unspecified
 		}
 		list = append(list, nic)
+	}
+	for id, idx := range indexes {
+		if !activeIDs[id] {
+			nics.DropHandle(idx)
+		}
 	}
 	sched.Update(list)
 	last, lastJS = list, js
@@ -290,5 +319,45 @@ func ResetQuota(adapter string) error {
 		return errors.New(i18n.T("Saved allowances must be loaded before relaying."))
 	}
 	return state.ApplyQuota(stateDir, sched, state.QuotaRequest{Adapter: adapter, Action: "reset"})
+}
+
+// ResetAllConnections clears every speed cap and data allowance, closes active flows, then lets
+// the platform rescan its current networks. Session counters remain intact for the live session.
+func ResetAllConnections() error {
+	mu.Lock()
+	defer mu.Unlock()
+	if !configured {
+		return errors.New(i18n.T("Saved allowances must be loaded before relaying."))
+	}
+	wasRunning := stop != nil
+	sched.Pause(true)
+	oldLimits := sched.Limits()
+	sched.SetLimits(map[string]float64{})
+	if err := state.CheckpointLimits(stateDir, sched); err != nil {
+		sched.SetLimits(oldLimits)
+		if wasRunning {
+			sched.Pause(false)
+		}
+		return err
+	}
+	sched.LoadQuotas(map[string]engine.QuotaRecord{})
+	if err := state.CheckpointQuotas(stateDir, sched); err != nil {
+		sched.SetStorageError(err)
+		if wasRunning {
+			sched.Pause(false)
+		}
+		return err
+	}
+	// Keep the relay closed to stale handles until the phone supplies a fresh network scan.
+	sched.Update(nil)
+	sched.CloseGone()
+	for _, idx := range indexes {
+		nics.DropHandle(idx)
+	}
+	last, lastJS = nil, "[]"
+	if wasRunning {
+		sched.Pause(false)
+	}
+	return nil
 }
 func StorageError() string { return sched.StorageError() }

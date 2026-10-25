@@ -50,7 +50,7 @@ assert records['version'] == 1 and records['adapters'], state
 # traffic has already consumed more than a byte, so this must exhaust each link.
 for index in range(len(records['adapters'])):
     root = dump()
-    tap_text(root,'حدود الاتصالات',index)
+    tap_text(root,'حد الاستخدام',index)
     root = expect('حد السرعة')
     boxes=[n for n in root.iter() if n.get('checkable') == 'true']
     assert len(boxes) == 2, ET.tostring(root,encoding='unicode')

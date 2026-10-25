@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")"
-version=${APP_VERSION:-0.4.0}
+version=${APP_VERSION:-0.4.1}
 versionCode=$(python3 -c 'import sys; a,b,c=map(int,sys.argv[1].split(".")); print(a*1000000+b*10000+c*100)' "$version")
 mkdir -p Frameworks
 (

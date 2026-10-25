@@ -19,5 +19,11 @@ struct Connection: Codable, Identifiable {
     let present, quotaExhausted: Bool
     let sessionBytes, quotaBytes, quotaUsedBytes, quotaRemainingBytes: Int64
     let rateIn, rateOut, limitMbps: Double
+
+    var displayName: String {
+        if name.hasPrefix("pdp_ip") { return L("mobile_data") }
+        if name == "en0" { return L("wifi") }
+        return name
+    }
 }
 struct Response: Codable { let stats: [Connection]; let error: String; let paused: Bool }

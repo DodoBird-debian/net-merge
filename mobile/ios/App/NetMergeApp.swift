@@ -66,20 +66,29 @@ struct MainView: View {
     @Binding var locale: String
     @State private var editing: Connection?
     @State private var resetting: Connection?
+    @State private var resettingAll = false
     private let timer = Timer.publish(every:1,on:.main,in:.common).autoconnect()
     var body: some View {
         NavigationStack { List {
             Section {
+                Image("CommunityBanner")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .accessibilityLabel(L("community_banner"))
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                    .listRowBackground(Color.clear)
                 Picker(L("language"),selection:$locale) { Text("العربية").tag("ar"); Text("English").tag("en") }.pickerStyle(.segmented)
                     .onChange(of:locale) { language = $0; model.send(["action":"language"]) }
                 Text(L(!model.connected || model.paused ? "paused" : "active")).font(.title2)
                 Button(L(!model.connected || model.paused ? "resume" : "stop"),action:model.toggle)
                 Text(String(format:L("total_used"),ltr(GB(model.connections.reduce(0) {$0+$1.sessionBytes}))))
                 if model.connections.contains(where:{$0.present}) && model.connections.filter({$0.present}).allSatisfy({$0.quotaExhausted}) { Text(L("exhausted")).foregroundColor(.red) }
+                Button(L("reset_all")) { resettingAll = true }.disabled(!model.connected)
             }
-            ForEach(model.connections) { c in
-                Section(ltr(c.name)) {
-                    Text(L(!c.present ? "disconnected" : c.quotaExhausted ? "exhausted" : c.state == "up" || c.state6 == "up" ? "up" : "checking"))
+            ForEach(model.connections.filter(\.present)) { c in
+                Section(ltr(c.displayName)) {
+                    Text(L(c.quotaExhausted ? "exhausted" : c.state == "up" || c.state6 == "up" ? "up" : "checking"))
                     Text(ltr("↓ \(speed(model.connected && !model.paused ? c.rateIn : 0))   ↑ \(speed(model.connected && !model.paused ? c.rateOut : 0))"))
                     Text(String(format:L("used_start"),ltr(GB(c.sessionBytes))))
                     Text(String(format:L("used_allowance"),ltr(GB(c.quotaUsedBytes))))
@@ -90,7 +99,7 @@ struct MainView: View {
             }
             Section {
                 Text(L("scope")); Text(L("experimental"))
-                Link(L("community"),destination:URL(string:"https://www.facebook.com/groups/1088749137864406/")!)
+                Link(destination:URL(string:"https://www.facebook.com/groups/1088749137864406/")!) { Text(ltr(L("community"))) }
                 Text(L("credits"))
             }.font(.footnote)
         }.navigationTitle("net-merge") }
@@ -100,6 +109,10 @@ struct MainView: View {
             Button(L("confirm"),role:.destructive) { if let c = resetting {model.send(["action":"reset","id":c.id])}; resetting=nil }
             Button(L("cancel"),role:.cancel) {resetting=nil}
         } message: { Text(L("reset_confirm")) }
+        .confirmationDialog(L("reset_all"),isPresented:$resettingAll,titleVisibility:.visible) {
+            Button(L("reset_all"),role:.destructive) { model.send(["action":"reset-all"]) }
+            Button(L("cancel"),role:.cancel) {}
+        } message: { Text(L("reset_all_confirm")) }
         .alert(L("error"),isPresented:Binding(get:{!model.error.isEmpty},set:{if !$0 {model.error=""}})) { Button(L("cancel"),role:.cancel) {model.error=""} } message: {Text(ltr(model.error))}
     }
 }
@@ -113,7 +126,7 @@ struct LimitsView: View {
     @State private var quotaUnlimited = true
     var body: some View {
         NavigationStack { Form {
-            Text(ltr(connection.name))
+            Text(ltr(connection.displayName))
             Section(L("speed")) { Toggle(L("unlimited"),isOn:$rateUnlimited); if !rateUnlimited {TextField(L("speed"),text:$rate).keyboardType(.decimalPad).environment(\.layoutDirection,.leftToRight)} }
             Section(L("allowance")) { Toggle(L("unlimited"),isOn:$quotaUnlimited); if !quotaUnlimited {TextField(L("allowance"),text:$quota).keyboardType(.decimalPad).environment(\.layoutDirection,.leftToRight)} }
             Button(L("save")) { model.send(["action":"limits","id":connection.id,"speed":rateUnlimited ? "unlimited" : rate,"quota":quotaUnlimited ? "unlimited" : quota]); dismiss() }

@@ -3,6 +3,21 @@
 What changed in each release. Each version's section becomes its GitHub release notes, so add the
 entry here before pushing a version tag.
 
+## [0.4.1] - 2026-10-25
+
+### Fixed
+- Android now keeps a single cellular row after radio reconnects, re-enumerates active networks on
+  request, and reuses the returning adapter's saved quota and session state when Android changes its
+  interface identity.
+- The iOS tunnel exposes one mobile-data connection instead of duplicate `pdp_ip*` interfaces.
+- Updated the Arabic and English connection labels and added a reset-all action that clears limits,
+  resets allowances, closes flows, and scans current phone connections again.
+
+### Added
+- Iraq PC Community square logo as the Windows, Linux, Android, and iOS app icon, plus the wide
+  community artwork at the top of both phone app home screens.
+- Latest-release Windows installer and Android APK download badges at the top of the README.
+
 ## [0.4.0] - 2026-10-24
 
 Rebranded for [Iraq PC Community on Facebook](https://www.facebook.com/groups/1088749137864406/).

@@ -4,6 +4,11 @@
 
 <h1 align="center">net-merge</h1>
 
+<p align="center">
+  <a href="https://github.com/DodoBird-debian/net-merge/releases/latest/download/net-merge-setup.exe"><img src="https://img.shields.io/badge/Download-Windows%20Installer-5b38d5?logo=windows&logoColor=white" alt="Download the latest Windows installer"></a>
+  <a href="https://github.com/DodoBird-debian/net-merge/releases/latest/download/net-merge-android.apk"><img src="https://img.shields.io/badge/Download-Android%20APK-278c4b?logo=android&logoColor=white" alt="Download the latest Android installer"></a>
+</p>
+
 > Rebranded for [Iraq PC Community on Facebook](https://www.facebook.com/groups/1088749137864406/).
 > Based on [net-merge by Rohit Mahto](https://github.com/rohit267/net-merge). The original MIT license and copyright notice are preserved.
 
@@ -40,16 +45,16 @@ On macOS, unprivileged SOCKS mode keeps its state in the user's cache under `net
 
 ## Downloads
 
-Get [net-merge 0.4.0 for Iraq PC Community](https://github.com/DodoBird-debian/net-merge/releases/tag/v0.4.0).
+Get [net-merge 0.4.1 for Iraq PC Community](https://github.com/DodoBird-debian/net-merge/releases/tag/v0.4.1).
 Verify files against the release’s `SHA256SUMS`.
 
 | Platform | Download |
 | --- | --- |
-| Windows 10/11, x64 | `net-merge-setup-0.4.0.exe` or `net-merge-0.4.0-portable.zip` |
+| Windows 10/11, x64 | `net-merge-setup-0.4.1.exe` or `net-merge-0.4.1-portable.zip` |
 | Linux | CPU-specific tarball, DEB, RPM, Alpine APK or Arch package |
-| macOS, Intel and Apple Silicon | `net-merge-0.4.0-macos-universal.tar.gz` |
-| Android 8+ | `net-merge-0.4.0-android.apk`, signed with this community fork’s key |
-| iOS 16+, arm64 | `net-merge-0.4.0-ios-arm64-unsigned.ipa`, experimental; requires your own signing/provisioning |
+| macOS, Intel and Apple Silicon | `net-merge-0.4.1-macos-universal.tar.gz` |
+| Android 8+ | `net-merge-0.4.1-android.apk`, signed with this community fork’s key |
+| iOS 16+, arm64 | `net-merge-0.4.1-ios-arm64-unsigned.ipa`, experimental; requires your own signing/provisioning |
 
 Linux CPUs: x86_64, aarch64, armv7, armv6, i686, riscv64, ppc64le, s390x and loongarch64.
 Linux `.apk` files are **Alpine packages**, not Android apps.

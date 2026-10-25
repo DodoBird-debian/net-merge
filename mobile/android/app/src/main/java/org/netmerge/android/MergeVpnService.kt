@@ -29,6 +29,7 @@ class MergeVpnService : VpnService() {
     companion object {
         const val ACTION_START = "org.netmerge.android.START"
         const val ACTION_STOP = "org.netmerge.android.STOP"
+        const val ACTION_REFRESH_CONNECTIONS = "org.netmerge.android.REFRESH_CONNECTIONS"
         private const val TAG = "NetMerge"
         private const val CHANNEL = "status"
         private const val NOTIF_ID = 1
@@ -45,6 +46,12 @@ class MergeVpnService : VpnService() {
 
         fun stop(ctx: Context) {
             ctx.startService(Intent(ctx, MergeVpnService::class.java).setAction(ACTION_STOP))
+        }
+
+        fun refreshConnections(ctx: Context) {
+            if (Engine.phase.value != Engine.Phase.OFF) {
+                ctx.startService(Intent(ctx, MergeVpnService::class.java).setAction(ACTION_REFRESH_CONNECTIONS))
+            }
         }
     }
 
@@ -64,6 +71,13 @@ class MergeVpnService : VpnService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP) {
             shutdown()
+            return START_NOT_STICKY
+        }
+        if (intent?.action == ACTION_REFRESH_CONNECTIONS) {
+            tracker?.refresh()
+            onNetworks(tracker?.current().orEmpty())
+            Engine.sample()
+            updateNotification()
             return START_NOT_STICKY
         }
         // ACTION_START, or the system starting us for always-on VPN (action android.net.VpnService).
@@ -186,6 +200,7 @@ class MergeVpnService : VpnService() {
         Engine.setPhase(Engine.Phase.OFF)
         tracker?.stop()
         tracker = null
+        runCatching { netmerge.Netmerge.setNetworks("[]") }
         runCatching { tun?.close() }
         tun = null
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -244,8 +259,9 @@ class MergeVpnService : VpnService() {
     private fun updateNotification() {
         if (Engine.phase.value != Engine.Phase.ON) return
         val stats = Engine.stats.value
-        val text = if (stats.isEmpty()) Engine.localized(applicationContext).getString(R.string.notif_waiting)
-        else stats.joinToString("\n") { "${it.displayName(Engine.localized(applicationContext))}: ${Stats.rate(it.rateIn + it.rateOut)} · ${Engine.localized(applicationContext).getString(R.string.used_start, Stats.gb(it.sessionBytes))}" } + "\n" + Engine.localized(applicationContext).getString(R.string.total_used, Stats.gb(stats.sumOf { it.sessionBytes }))
+        val visible = stats.filter { it.present }
+        val text = if (visible.isEmpty()) Engine.localized(applicationContext).getString(R.string.notif_waiting)
+        else visible.joinToString("\n") { "${it.displayName(Engine.localized(applicationContext))}: ${Stats.rate(it.rateIn + it.rateOut)} · ${Engine.localized(applicationContext).getString(R.string.used_start, Stats.gb(it.sessionBytes))}" } + "\n" + Engine.localized(applicationContext).getString(R.string.total_used, Stats.gb(stats.sumOf { it.sessionBytes }))
         val statusText = if (stats.any { it.present } && stats.filter { it.present }.all { it.quotaExhausted }) Engine.localized(applicationContext).getString(R.string.exhausted) + "\n" + text else text
         getSystemService(NotificationManager::class.java).notify(NOTIF_ID, buildNotification(statusText))
     }

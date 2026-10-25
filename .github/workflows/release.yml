@@ -6,7 +6,7 @@ on:
     inputs:
       version:
         description: Release version
-        default: '0.4.0'
+        default: '0.4.1'
         type: string
       publish:
         description: Publish after all builds and checks pass
@@ -22,7 +22,7 @@ jobs:
     steps:
       - id: version
         env:
-          REQUESTED_VERSION: ${{ inputs.version || '0.4.0' }}
+          REQUESTED_VERSION: ${{ inputs.version || '0.4.1' }}
         run: |
           if [ "$GITHUB_REF_TYPE" = tag ]; then v=${GITHUB_REF_NAME#v}; else v=$REQUESTED_VERSION; fi
           python3 -c 'import re,sys; assert re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+",sys.argv[1]), "invalid version"' "$v"

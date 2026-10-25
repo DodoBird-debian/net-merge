@@ -4,27 +4,40 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.Image
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import org.netmerge.android.Engine
 import org.netmerge.android.Stats
 import org.netmerge.android.R
 
 @Composable
 fun MainScreen(phase: Engine.Phase, stats: List<Stats>, history: Map<String,List<Float>>,
-               evenSplit: Boolean, onToggle: ()->Unit, onEvenSplit: (Boolean)->Unit, onLanguage: (String)->Unit) {
+               evenSplit: Boolean, onToggle: ()->Unit, onEvenSplit: (Boolean)->Unit, onLanguage: (String)->Unit,
+               onResetAll: ()->Unit) {
     val ctx = LocalContext.current
     val error by Engine.error.collectAsState()
     var editing by remember { mutableStateOf<Stats?>(null) }
     var resetting by remember { mutableStateOf<Stats?>(null) }
+    var showResetAll by remember { mutableStateOf(false) }
     LazyColumn(Modifier.fillMaxSize().safeDrawingPadding().padding(16.dp), verticalArrangement=Arrangement.spacedBy(12.dp)) {
         item {
-            Text(stringResource(R.string.app_name), style=MaterialTheme.typography.headlineSmall)
+            Image(
+                painter = painterResource(R.drawable.community_banner),
+                contentDescription = stringResource(R.string.community_banner),
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(16.dp)),
+            )
+            Text(ltr(stringResource(R.string.app_name)), style=MaterialTheme.typography.headlineSmall)
             Row {
                 TextButton(onClick={onLanguage("ar")}) { Text("العربية") }
                 TextButton(onClick={onLanguage("en")}) { Text("English") }
@@ -33,8 +46,9 @@ fun MainScreen(phase: Engine.Phase, stats: List<Stats>, history: Map<String,List
             Button(onClick=onToggle) { Text(stringResource(if(phase==Engine.Phase.OFF) R.string.resume else R.string.stop)) }
             if(stats.any { it.present } && stats.filter { it.present }.all { it.quotaExhausted }) Text(stringResource(R.string.exhausted),color=MaterialTheme.colorScheme.error)
             Text(stringResource(R.string.total_used, ltr(Stats.gb(stats.sumOf {it.sessionBytes}))))
+            TextButton(onClick={showResetAll=true}) { Text(stringResource(R.string.reset_all)) }
         }
-        items(stats,key={it.id}) { s ->
+        items(stats.filter { it.present },key={it.id}) { s ->
             Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(12.dp)) {
                 Text(s.displayName(ctx),style=MaterialTheme.typography.titleMedium)
                 Text(stringResource(when { !s.present->R.string.disconnected; s.quotaExhausted->R.string.exhausted; s.status=="up"->R.string.up; s.status=="checking"->R.string.checking; else->R.string.no_internet }))
@@ -50,7 +64,7 @@ fun MainScreen(phase: Engine.Phase, stats: List<Stats>, history: Map<String,List
         }
         item {
             Text(stringResource(R.string.scope),style=MaterialTheme.typography.bodySmall)
-            TextButton(onClick={ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW,android.net.Uri.parse(ctx.getString(R.string.link))))}) { Text(stringResource(R.string.community)) }
+            TextButton(onClick={ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW,android.net.Uri.parse(ctx.getString(R.string.link))))}) { Text(ltr(stringResource(R.string.community))) }
             Text(stringResource(R.string.credits),style=MaterialTheme.typography.bodySmall)
         }
     }
@@ -72,6 +86,9 @@ fun MainScreen(phase: Engine.Phase, stats: List<Stats>, history: Map<String,List
     resetting?.let { s -> AlertDialog(onDismissRequest={resetting=null},title={Text(stringResource(R.string.reset))},text={Text(stringResource(R.string.reset_confirm))},confirmButton={TextButton(onClick={
         try {netmerge.Netmerge.resetQuota(s.id);Engine.sample();resetting=null} catch(e:Exception){Engine.setError(e)}
     }){Text(stringResource(R.string.confirm))}},dismissButton={TextButton(onClick={resetting=null}){Text(stringResource(R.string.cancel))}}) }
+    if(showResetAll) AlertDialog(onDismissRequest={showResetAll=false},title={Text(stringResource(R.string.reset_all))},text={Text(stringResource(R.string.reset_all_confirm))},confirmButton={TextButton(onClick={
+        onResetAll(); showResetAll=false
+    }) { Text(stringResource(R.string.confirm)) }},dismissButton={TextButton(onClick={showResetAll=false}){Text(stringResource(R.string.cancel))}})
     val storage = netmerge.Netmerge.storageError()
     if(error.isNotEmpty() || storage.isNotEmpty()) AlertDialog(onDismissRequest={Engine.clearError()},title={Text(stringResource(R.string.error))},text={Text(ltr(if(error.isNotEmpty()) error else storage))},confirmButton={TextButton(onClick={Engine.clearError()}){Text(stringResource(R.string.cancel))}})
 }

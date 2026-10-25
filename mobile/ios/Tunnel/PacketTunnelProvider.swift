@@ -53,6 +53,7 @@ final class PacketTunnelProvider: NEPacketTunnelProvider {
             switch msg["action"] {
             case "limits": _ = NetmergeSetConnectionLimits(msg["id"] ?? "",msg["speed"] ?? "",msg["quota"] ?? "", &nativeError)
             case "reset": _ = NetmergeResetQuota(msg["id"] ?? "", &nativeError)
+            case "reset-all": _ = NetmergeResetAllConnections(&nativeError)
             case "pause": paused = msg["paused"] == "true"; NetmergePause(paused)
             case "language": _ = NetmergeConfigure(FileManager.default.containerURL(forSecurityApplicationGroupIdentifier:appGroup)!.path,language, &nativeError)
             default: break

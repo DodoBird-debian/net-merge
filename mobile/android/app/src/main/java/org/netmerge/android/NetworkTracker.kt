@@ -91,16 +91,45 @@ class NetworkTracker(
 
     fun current(): List<Tracked> {
         val (snapshot, bw) = synchronized(lock) { links.toList() to HashMap(bandwidth) }
+        // A cellular request can briefly report both the old radio network and its replacement.
+        // Keep the newest one so that the UI and scheduler see one mobile-data connection.
+        val newestCellular = snapshot.lastOrNull { it.second.first == NetworkCapabilities.TRANSPORT_CELLULAR }?.first
         val seen = HashMap<String, Int>()
         return snapshot.map { (network, info) ->
             val (transport, lp) = info
+            if (transport == NetworkCapabilities.TRANSPORT_CELLULAR && network != newestCellular) return@map null
             val base = if (transport == NetworkCapabilities.TRANSPORT_WIFI) "Wi-Fi" else "Mobile data"
-            // Dual SIM or two Wi-Fi links get "Mobile data 2" etc.; names must stay unique and stable.
+            // Multiple tracked links get distinct labels; the cellular path above keeps only one.
             val n = (seen[base] ?: 0) + 1
             seen[base] = n
             val name = if (n == 1) base else "$base $n"
             Tracked(name, "$transport:${lp?.interfaceName ?: base}", network, hasV4(lp), hasV6(lp), bw[network] ?: 0)
-        }.filter { it.v4 || it.v6 }
+        }.filterNotNull().filter { it.v4 || it.v6 }
+    }
+
+    /** Re-scan the current system networks after the user requests connection cleanup. */
+    fun refresh() {
+        val scanned = cm.allNetworks.mapNotNull { network ->
+            val caps = cm.getNetworkCapabilities(network) ?: return@mapNotNull null
+            if (!caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) ||
+                !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)) return@mapNotNull null
+            val transport = when {
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> NetworkCapabilities.TRANSPORT_WIFI
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> NetworkCapabilities.TRANSPORT_CELLULAR
+                else -> return@mapNotNull null
+            }
+            val properties = cm.getLinkProperties(network)
+            Triple(network, transport to properties, caps.linkDownstreamBandwidthKbps)
+        }
+        synchronized(lock) {
+            links.clear()
+            bandwidth.clear()
+            scanned.forEach { (network, info, kbps) ->
+                links[network] = info
+                bandwidth[network] = kbps
+            }
+        }
+        publish()
     }
 
     private fun publish() = onChange(current())
