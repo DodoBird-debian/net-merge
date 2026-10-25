@@ -5,10 +5,11 @@ import os
 import subprocess
 import time
 repo, sha = os.environ['GITHUB_REPOSITORY'], os.environ['GITHUB_SHA']
-endpoint = f'repos/{repo}/actions/workflows/ci.yml/runs?head_sha={sha}&event=push'
+endpoint = f'repos/{repo}/actions/workflows/ci.yml/runs?head_sha={sha}'
 for _ in range(60):
     data = json.loads(subprocess.check_output(['gh','api',endpoint]))
-    runs = data.get('workflow_runs',[])
+    runs = [run for run in data.get('workflow_runs',[])
+            if run.get('event') in ('push', 'workflow_dispatch')]
     if runs:
         run = runs[0]
         if run['status'] == 'completed':
