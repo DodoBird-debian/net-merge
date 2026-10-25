@@ -45,7 +45,7 @@ On macOS, unprivileged SOCKS mode keeps its state in the user's cache under `net
 
 ## Downloads
 
-Get [net-merge 0.4.1 for Iraq PC Community](https://github.com/DodoBird-debian/net-merge/releases/tag/v0.4.1).
+Get the [latest net-merge release for Iraq PC Community](https://github.com/DodoBird-debian/net-merge/releases/latest).
 Verify files against the release’s `SHA256SUMS`.
 
 | Platform | Download |
