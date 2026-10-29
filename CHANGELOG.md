@@ -3,7 +3,11 @@
 What changed in each release. Each version's section becomes its GitHub release notes, so add the
 entry here before pushing a version tag.
 
-## [Unreleased]
+## [0.4.2] - 2026-10-29
+
+### Changed
+- Updated the Iraq PC Community app to the current upstream net-merge code while retaining the
+  community connection limits, usage tracking, Arabic support, and phone apps.
 
 ### Fixed
 - Incorporated upstream's SOCKS5 request validation in the desktop and phone relay engines:

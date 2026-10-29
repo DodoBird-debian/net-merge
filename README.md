@@ -50,11 +50,11 @@ Verify files against the release’s `SHA256SUMS`.
 
 | Platform | Download |
 | --- | --- |
-| Windows 10/11, x64 | `net-merge-setup-0.4.1.exe` or `net-merge-0.4.1-portable.zip` |
+| Windows 10/11, x64 | `net-merge-setup.exe` or `net-merge-portable.zip` |
 | Linux | CPU-specific tarball, DEB, RPM, Alpine APK or Arch package |
-| macOS, Intel and Apple Silicon | `net-merge-0.4.1-macos-universal.tar.gz` |
-| Android 8+ | `net-merge-0.4.1-android.apk`, signed with this community fork’s key |
-| iOS 16+, arm64 | `net-merge-0.4.1-ios-arm64-unsigned.ipa`, experimental; requires your own signing/provisioning |
+| macOS, Intel and Apple Silicon | `net-merge-macos-universal.tar.gz` |
+| Android 8+ | `net-merge-android.apk`, signed with this community fork’s key |
+| iOS 16+, arm64 | `net-merge-ios-arm64-unsigned.ipa`, experimental; requires your own signing/provisioning |
 
 Linux CPUs: x86_64, aarch64, armv7, armv6, i686, riscv64, ppc64le, s390x and loongarch64.
 Linux `.apk` files are **Alpine packages**, not Android apps.

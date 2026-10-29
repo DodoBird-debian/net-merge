@@ -8,7 +8,7 @@ Android is derived from [net-merge/android](https://github.com/net-merge/android
 from this repository, with only module import paths changed. Mobile adapter and lifecycle
 code live beside them. Keep accounting fixes in both modules synchronized.
 
-Android requires Android 8 or later. Install `net-merge-0.4.1-android.apk`; its community
+Android requires Android 8 or later. Install `net-merge-android.apk`; its community
 application ID and signing certificate are separate from upstream. Accept Android's VPN
 consent prompt. Other VPNs cannot run at the same time. Only Wi-Fi and cellular networks
 reported as available by Android can carry flows. Interface identity persists across network
