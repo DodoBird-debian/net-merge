@@ -37,10 +37,6 @@ def tap_node(n):
 def scroll_to_top():
     for _ in range(4):
         adb('shell','input','swipe','500','600','500','1800','250')
-def localized_name(name):
-    if name.startswith('Wi-Fi'): return 'واي فاي'+name.removeprefix('Wi-Fi')
-    if name.startswith('Mobile data'): return 'البيانات'+name.removeprefix('Mobile data')
-    return name
 def open_limits(name):
     scroll_to_top()
     for _ in range(8):
@@ -71,10 +67,11 @@ state = adb('exec-out','run-as',pkg,'cat','files/quotas.json')
 import json
 records = json.loads(state)
 assert records['version'] == 1 and records['adapters'], state
-# Set real per-connection caps through the native settings UI. Existing relayed
-# traffic has already consumed more than a byte, so this must exhaust each link.
-for record in records['adapters'].values():
-    open_limits(localized_name(record['name']))
+# Set both visible connections through the native settings UI. The saved state can
+# gain a second adapter after the initial snapshot as Android finishes enumeration.
+# Existing relayed traffic has already consumed more than a byte on each link.
+for name in ('واي فاي', 'البيانات'):
+    open_limits(name)
     root = expect('حد السرعة')
     boxes=[n for n in root.iter() if n.get('checkable') == 'true']
     assert len(boxes) == 2, ET.tostring(root,encoding='unicode')
