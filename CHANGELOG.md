@@ -9,6 +9,8 @@ entry here before pushing a version tag.
 - Incorporated upstream's SOCKS5 request validation in the desktop and phone relay engines:
   invalid reserved bytes are rejected, and unsupported commands receive a response without
   waiting for a destination. The upstream regression tests run in both modules.
+- Drain any already-sent destination bytes before closing an unsupported SOCKS5 request, so
+  Windows clients can reliably receive the rejection response.
 - Kept the Linux cross-architecture CI runner on Ubuntu 24.04 so its QEMU dependency remains
   installable.
 - Kept community install, uninstall, package instructions, update links, and issue reporting

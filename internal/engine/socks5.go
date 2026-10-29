@@ -51,6 +51,13 @@ func (b *Balancer) handleSocks5(c net.Conn) {
 	}
 	if req[1] != 0x01 { // CONNECT only; UDP ASSOCIATE comes with the TUN front-end
 		socksReply(c, repCmdUnsupported)
+		if tcp, ok := c.(*net.TCPConn); ok {
+			// Clients may have already sent the destination. On Windows, closing a TCP socket
+			// with unread request bytes can reset it before the reply reaches the client.
+			tcp.CloseWrite()
+			c.SetReadDeadline(time.Now().Add(250 * time.Millisecond))
+			io.Copy(io.Discard, c)
+		}
 		c.Close()
 		return
 	}
