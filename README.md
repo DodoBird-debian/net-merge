@@ -10,7 +10,7 @@
 </p>
 
 > Rebranded for [Iraq PC Community on Facebook](https://www.facebook.com/groups/1088749137864406/).
-> Based on [net-merge by Rohit Mahto](https://github.com/rohit267/net-merge). The original MIT license and copyright notice are preserved.
+> Based on [net-merge by Rohit Mahto](https://github.com/net-merge/net-merge). The original MIT license and copyright notice are preserved.
 
 
 ## Iraq PC Community additions
@@ -94,7 +94,7 @@ build deliberately uses `CODE_SIGNING_ALLOWED=NO`.
 
 ## Credits and license
 
-Based on [net-merge by Rohit Mahto](https://github.com/rohit267/net-merge) and the
+Based on [net-merge by Rohit Mahto](https://github.com/net-merge/net-merge) and the
 [Android port by SenseiRedsmoke and contributors](https://github.com/net-merge/android).
 Rebranded for [Iraq PC Community on Facebook](https://www.facebook.com/groups/1088749137864406/).
 The original [MIT license](LICENSE), Android [MIT license](mobile/android/LICENSE), and

@@ -38,17 +38,18 @@
     <keyword>wifi</keyword>
     <keyword>load balancing</keyword>
   </keywords>
-  <url type="homepage">https://net-merge.org</url>
-  <url type="bugtracker">https://github.com/rohit267/net-merge/issues</url>
-  <url type="donation">https://buymeacoffee.com/rohit267</url>
+  <url type="homepage">https://github.com/DodoBird-debian/net-merge</url>
+  <url type="bugtracker">https://github.com/DodoBird-debian/net-merge/issues</url>
   <screenshots>
     <screenshot type="default">
       <caption>The tray menu shows each connection's speed and how many connections it carries</caption>
-      <image>https://raw.githubusercontent.com/rohit267/net-merge/main/docs/tray-menu.png</image>
+      <image>https://raw.githubusercontent.com/DodoBird-debian/net-merge/main/docs/tray-menu.png</image>
     </screenshot>
   </screenshots>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.4.1" date="2026-10-25"/>
+    <release version="0.4.0" date="2026-10-24"/>
     <release version="0.3.5" date="2026-10-24"/>
     <release version="0.3.4" date="2026-10-23"/>
     <release version="0.3.3" date="2026-10-20"/>

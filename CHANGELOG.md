@@ -3,7 +3,7 @@
 What changed in each release. Each version's section becomes its GitHub release notes, so add the
 entry here before pushing a version tag.
 
-## Unreleased
+## [Unreleased]
 
 ### Fixed
 - Incorporated upstream's SOCKS5 request validation in the desktop and phone relay engines:
@@ -11,6 +11,9 @@ entry here before pushing a version tag.
   waiting for a destination. The upstream regression tests run in both modules.
 - Kept the Linux cross-architecture CI runner on Ubuntu 24.04 so its QEMU dependency remains
   installable.
+- Kept community install, uninstall, package instructions, update links, and issue reporting
+  pointed at the fork after merging upstream's repository move. Uninstall no longer removes an
+  upstream package-manager installation or saved community usage settings.
 
 ## [0.4.1] - 2026-10-25
 

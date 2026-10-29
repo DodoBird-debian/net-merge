@@ -28,6 +28,7 @@ flowchart LR
     App["Your apps"] --> TUN["Virtual adapter<br/>Wintun, TUN or utun<br/>two /1 routes per IP family"]
     TUN --> Stack["Userland TCP/IP stack<br/>gVisor, through tun2socks"]
     Stack --> Sched["Scheduler<br/>lowest (busy flows + 1) / weight"]
+    Quota["Saved per-adapter allowance<br/>relayed bytes only"] -.->|exclude exhausted links| Sched
     Sched --> Wifi["New socket pinned to Wi-Fi"]
     Sched --> Eth["New socket pinned to Ethernet"]
     Sched --> Phone["New socket pinned to a phone tether"]

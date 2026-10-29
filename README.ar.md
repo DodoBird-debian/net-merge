@@ -1,6 +1,6 @@
 # net-merge — مجتمع Iraq PC Community
 
-نسخة مجتمعية مبنية على [net-merge للمطور Rohit Mahto](https://github.com/rohit267/net-merge)، مع الاحتفاظ بترخيص MIT وحقوق المؤلف الأصلية.
+نسخة مجتمعية مبنية على [net-merge للمطور Rohit Mahto](https://github.com/net-merge/net-merge)، مع الاحتفاظ بترخيص MIT وحقوق المؤلف الأصلية.
 
 [مجتمع Iraq PC Community على Facebook](https://www.facebook.com/groups/1088749137864406/) · [English](README.md)
 

@@ -6,7 +6,7 @@
 # Installs the community fork from GitHub release tarballs on Linux and macOS.
 # NET_MERGE_NO_START=1 leaves the tray off.
 #
-# Uninstall, however it was installed:
+# Remove this fork's tarball installation (without touching upstream packages):
 #
 #   curl -fsSL https://raw.githubusercontent.com/DodoBird-debian/net-merge/main/install.sh | sh -s -- uninstall
 set -eu
@@ -54,63 +54,46 @@ tarball() {
     fi
 }
 
-# ---- uninstall: stop it, then remove it the way it was installed, with the repository it came from
-uninstall() {
-    say "Stopping net-merge"
-    if have net-merge; then
-        net-merge quit >/dev/null 2>&1 || true           # the tray
-        $SUDO net-merge off >/dev/null 2>&1 || true      # system-wide mode started from a terminal
-        net-merge autostart off >/dev/null 2>&1 || true  # start at sign-in
+# Earlier community releases did not write an install marker. The fork's release binary embeds its
+# own GitHub repository, which lets us recognize those installs without claiming an upstream binary.
+community_binary() {
+    [ -f "$1" ] && LC_ALL=C grep -aq 'DodoBird-debian/net-merge' "$1"
+}
+
+stop_community_tray() {
+    if community_binary "$1"; then
+        "$1" quit >/dev/null 2>&1 || true
         sleep 2
     fi
+}
+
+# ---- uninstall only the community tarball; package managers and their keys belong to their owners
+uninstall() {
+    case $(uname -s) in
+        Darwin)
+            bin=/opt/net-merge/bin/net-merge
+            community_binary "$bin" || bin=/usr/local/bin/net-merge
+            ;;
+        Linux) bin=/usr/local/bin/net-merge ;;
+        *) die "this script is for macOS and Linux" ;;
+    esac
+    if ! community_binary "$bin"; then
+        say "No Iraq PC Community tarball installation found. Other net-merge installations were left alone."
+        return
+    fi
+    say "Stopping net-merge"
+    "$bin" quit >/dev/null 2>&1 || true
+    $SUDO "$bin" off >/dev/null 2>&1 || true
+    "$bin" autostart off >/dev/null 2>&1 || true
+    sleep 2
     if [ "$(uname -s)" = Darwin ]; then
-        for exe in /opt/net-merge/bin/net-merge /usr/local/bin/net-merge; do
-            [ -x "$exe" ] && { $SUDO "$exe" uninstall || true; break; }   # the root-owned copy and the sudoers rule
-        done
-        if have brew && brew list --formula net-merge >/dev/null 2>&1; then
-            say "Removing with Homebrew"
-            brew uninstall net-merge
-            brew untap rohit267/tap >/dev/null 2>&1 || true
-        fi
-        $SUDO rm -rf /var/run/net-merge "/Library/Application Support/net-merge" "$HOME/Library/Logs/net-merge.log"
+        $SUDO "$bin" uninstall
+        $SUDO rm -rf /var/run/net-merge
     else
-        if have dpkg && dpkg -s net-merge >/dev/null 2>&1; then
-            say "Removing with apt"
-            $SUDO env DEBIAN_FRONTEND=noninteractive apt-get remove -y -qq net-merge
-            $SUDO rm -f /etc/apt/sources.list.d/net-merge.list /usr/share/keyrings/net-merge.gpg
-        elif have rpm && rpm -q net-merge >/dev/null 2>&1; then
-            if have zypper; then
-                say "Removing with zypper"
-                $SUDO zypper --non-interactive remove net-merge
-                $SUDO zypper --non-interactive removerepo net-merge >/dev/null 2>&1 || true
-            else
-                pm=dnf; have dnf || pm=yum
-                say "Removing with $pm"
-                $SUDO "$pm" remove -y net-merge
-                $SUDO rm -f /etc/yum.repos.d/net-merge.repo
-            fi
-        elif have apk && apk info -e net-merge >/dev/null 2>&1; then
-            say "Removing with apk"
-            $SUDO apk del net-merge
-            $SUDO sed -i "\#^$BASE/apk\$#d" /etc/apk/repositories
-            $SUDO rm -f /etc/apk/keys/net-merge.rsa.pub
-        elif have pacman && pacman -Q net-merge >/dev/null 2>&1; then
-            say "Removing with pacman"
-            $SUDO pacman -R --noconfirm net-merge
-            $SUDO sed -i '/^\[net-merge\]$/,/^Server = .*net-merge/d' /etc/pacman.conf
-            $SUDO pacman-key --delete "$FPR" >/dev/null 2>&1 || true
-        fi
-        if have brew && brew list --formula net-merge >/dev/null 2>&1; then
-            say "Removing with Homebrew"
-            brew uninstall net-merge
-            brew untap rohit267/tap >/dev/null 2>&1 || true
-        fi
-        $SUDO rm -f /usr/local/bin/net-merge   # the tarball
-        rm -rf "${XDG_CACHE_HOME:-$HOME/.cache}/net-merge"
+        $SUDO rm -f "$bin"
     fi
     hash -r 2>/dev/null || true
-    have net-merge && die "a net-merge is still at $(command -v net-merge); remove it by hand"
-    say "net-merge is uninstalled. Your network settings are back to normal."
+    say "Community tarball removed. Saved settings remain available for a later install."
 }
 
 case ${1:-} in
@@ -121,8 +104,19 @@ esac
 
 # This fork installs its own release tarballs. It does not configure upstream repositories.
 case $(uname -s) in
-    Darwin) net-merge quit 2>/dev/null || true; $SUDO mkdir -p /usr/local/bin; tarball ;;
-    Linux) tarball ;;
+    Darwin)
+        if community_binary /opt/net-merge/bin/net-merge; then
+            stop_community_tray /opt/net-merge/bin/net-merge
+        else
+            stop_community_tray /usr/local/bin/net-merge
+        fi
+        $SUDO mkdir -p /usr/local/bin
+        tarball
+        ;;
+    Linux)
+        stop_community_tray /usr/local/bin/net-merge
+        tarball
+        ;;
     *) die "this script is for macOS and Linux" ;;
 esac
 
