@@ -5,9 +5,58 @@ entry here before pushing a version tag.
 
 ## [Unreleased]
 
-## [0.3.6] - 2026-10-28
+### Fixed
+- Incorporated upstream's SOCKS5 request validation in the desktop and phone relay engines:
+  invalid reserved bytes are rejected, and unsupported commands receive a response without
+  waiting for a destination. The upstream regression tests run in both modules.
+- Kept the Linux cross-architecture CI runner on Ubuntu 24.04 so its QEMU dependency remains
+  installable.
+- Kept community install, uninstall, package instructions, update links, and issue reporting
+  pointed at the fork after merging upstream's repository move. Uninstall no longer removes an
+  upstream package-manager installation or saved community usage settings.
+
+## [0.4.1] - 2026-10-25
+
+### Fixed
+- Android now keeps a single cellular row after radio reconnects, re-enumerates active networks on
+  request, and reuses the returning adapter's saved quota and session state when Android changes its
+  interface identity.
+- The iOS tunnel exposes one mobile-data connection instead of duplicate `pdp_ip*` interfaces.
+- Updated the Arabic and English connection labels and added a reset-all action that clears limits,
+  resets allowances, closes flows, and scans current phone connections again.
 
 ### Added
+- Iraq PC Community square logo as the Windows, Linux, Android, and iOS app icon, plus the wide
+  community artwork at the top of both phone app home screens.
+- Latest-release Windows installer and Android APK download badges at the top of the README.
+
+## [0.4.0] - 2026-10-24
+
+Rebranded for [Iraq PC Community on Facebook](https://www.facebook.com/groups/1088749137864406/).
+MIT licensing and original attribution are preserved. This release is published only on the community fork.
+
+### Phone builds
+- Android 8+: community-signed APK with per-interface speed caps, persistent data allowances,
+  GB session totals, manual reset confirmation, and English/Arabic UI. Separate application ID
+  and signing key from upstream. Wi-Fi/cellular selection follows Android availability.
+- iOS 16+: **experimental unsigned arm64 IPA**, containing a SwiftUI app and packet-tunnel
+  extension using the shared Go relay, limits, persistence, pause and Arabic UI. Signing and
+  suitable Network Extension/App Group provisioning are needed before installation and use.
+  See [the phone guide](mobile/README.md). No physical iPhone or Android dual-network tests
+  were available; the iOS port is not claimed to be device validated.
+- Linux `.apk` files are Alpine packages; the Android download is `net-merge-0.4.0-android.apk`.
+
+### Downloads and validation
+- Windows installer and portable ZIP; Linux tarballs, DEB, RPM, Alpine and Arch packages across
+  the existing CPU matrix; macOS universal tarball; Android APK; unsigned iOS IPA.
+- Release assets are staged before publication, with SHA-256 checksums and retained licenses.
+- Desktop cross-platform checks and Windows network/UI smoke tests pass. Mobile engine tests
+  cover accounting, small UDP packets, concurrency, persistence and packet bridging. The
+  latest one-second checkpoint and buffered traffic can affect the exact data cutoff.
+
+
+### Added
+- **Community fork:** manually reset data allowances per adapter, relayed session usage in GB for each connection and the total, a native Windows limits window and expanded hover panel, and complete Arabic/English app and installer text with RTL layouts. Saved allowances close exhausted TCP/UDP links and cannot be bypassed by automatic pause.
 - **Speed limits per connection** from the tray menu: click a connection and pick 1, 2, 5, 10, 20, 50 or
   100 Mbit/s (or *Unlimited*). The cap covers that connection's downloads and uploads across all of its
   flows and takes effect immediately; the choice is saved and applied again after a restart (on macOS
@@ -16,20 +65,11 @@ entry here before pushing a version tag.
   saved caps. Only traffic net-merge relays is capped, so an app bound directly to an adapter is not
   affected.
 
-### Changed
-- **net-merge has a new home: [github.com/net-merge/net-merge](https://github.com/net-merge/net-merge).**
-  Old links, the install commands and Homebrew keep working. New Homebrew installs use
-  `brew install net-merge/tap/net-merge`. If your Linux update fails with "404 Not Found" for
-  `rohit267.github.io`, see *Troubleshooting* in the README.
-
 ### Fixed
 - **A fast link no longer gets skipped because it holds many idle connections** (chat apps and browsers
   keep some open). New connections now go by how busy each link really is. Speed estimates are smoothed,
   so one burst doesn't flip which link is preferred, and they start over when an adapter gets a new
   address. Thanks to @vwidmer (#48).
-- **The built-in SOCKS5 proxy checks a request before it reads it.** A request with a non-zero reserved
-  byte is now dropped, and a command other than CONNECT gets its "not supported" answer straight away.
-  Thanks to @b0r1ssh (#61).
 
 ## [0.3.5] - 2026-10-24
 

@@ -24,12 +24,15 @@ const macStateDir = "/var/run/net-merge"
 const macLimitsDir = "/Library/Application Support/net-merge"
 
 type Status struct {
-	PID     int
-	Mode    string
-	V6      string
-	Since   time.Time
-	Updated time.Time
-	NICs    []engine.SlotStats
+	PID          int
+	Mode         string
+	V6           string
+	Since        time.Time
+	Updated      time.Time
+	NICs         []engine.SlotStats
+	Paused       bool
+	SessionBytes int64
+	StorageError string
 }
 
 func DefaultDir() string {
@@ -70,6 +73,15 @@ func Clear(dir string) { os.Remove(filepath.Join(dir, "status.json")) }
 
 // Read returns the status only if it is fresh, i.e. a live process is writing it.
 func Read(dir string) (*Status, bool) {
+	st, ok := ReadAny(dir)
+	if !ok || st.Paused {
+		return nil, false
+	}
+	return st, true
+}
+
+// ReadAny includes a live paused process, for session usage and quota status.
+func ReadAny(dir string) (*Status, bool) {
 	b, err := os.ReadFile(filepath.Join(dir, "status.json"))
 	if err != nil {
 		return nil, false

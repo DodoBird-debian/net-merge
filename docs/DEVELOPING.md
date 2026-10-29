@@ -28,6 +28,7 @@ flowchart LR
     App["Your apps"] --> TUN["Virtual adapter<br/>Wintun, TUN or utun<br/>two /1 routes per IP family"]
     TUN --> Stack["Userland TCP/IP stack<br/>gVisor, through tun2socks"]
     Stack --> Sched["Scheduler<br/>lowest (busy flows + 1) / weight"]
+    Quota["Saved per-adapter allowance<br/>relayed bytes only"] -.->|exclude exhausted links| Sched
     Sched --> Wifi["New socket pinned to Wi-Fi"]
     Sched --> Eth["New socket pinned to Ethernet"]
     Sched --> Phone["New socket pinned to a phone tether"]
@@ -106,3 +107,14 @@ Nix package and NixOS module are in `nix/`; after changing Go dependencies, upda
 
 Don't benchmark against speed.cloudflare.com repeatedly: it rate-limits the IP (HTTP 429) after a few
 large downloads and the numbers become meaningless.
+
+
+## Community connection limits and localization
+
+The community fork retains the existing speed-limit API and adds `quota <adapter> <GB|unlimited|reset>`, `language ar|en`, and `status -json`. Machine identifiers remain English. On Windows, adapter GUIDs keep settings and usage attached to a physical adapter across name/address/index changes; name-keyed speed settings are migrated when that adapter is discovered.
+
+`quotas.json` stores versioned per-adapter allowances and usage since the last manual reset. Payload I/O updates session and allowance counters once for upload/download over both IP families, including small UDP packets. Session counters live only in memory and retain departed adapters. The scheduler closes registered TCP/UDP sockets at exhaustion and filters exhausted adapters before health/fallback selection. Automatic pause cannot release capture while any allowance is enabled. Pausing closes registered sockets before returning.
+
+The quota store serializes atomic, synced replacements every second and on exhaustion/reset/shutdown; storage errors block relaying until a successful retry. A process crash can lose at most the latest checkpoint interval's accounting, and concurrent/kernel-buffered traffic can cross the cutoff. Allowances are payload estimates, not ISP billing meters. Run only one networking instance for a state directory.
+
+The Windows limits window and non-activating hover panel use Win32 without adding a browser runtime. The panel observes the pinned systray version's callback window, forwards its existing handlers, and applies RTL submenu ordering. UI controls have a Windows-only smoke test exercising Arabic numeric input, persistence, Unlimited, locale switching, RTL style, and hover text. English/Arabic JSON catalogs are embedded; a coverage test parses every OS's source and checks formatting placeholders. The original license remains unchanged.

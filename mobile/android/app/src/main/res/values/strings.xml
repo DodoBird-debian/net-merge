@@ -1,0 +1,43 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  <string name="app_name">net-merge · Iraq PC Community</string>
+  <string name="channel_name">Connection usage</string>
+  <string name="notif_title">net-merge is active</string>
+  <string name="notif_waiting">Waiting for a connection…</string>
+  <string name="stop">Pause</string>
+  <string name="vpn_denied">VPN permission is required to relay traffic.</string>
+  <string name="active">Active</string>
+  <string name="paused">Paused</string>
+  <string name="starting">Starting…</string>
+  <string name="resume">Resume</string>
+  <string name="limits">Connection limits</string>
+  <string name="speed">Speed limit (Mbps, each direction)</string>
+  <string name="allowance">Data allowance (GB)</string>
+  <string name="unlimited">Unlimited</string>
+  <string name="used_start">Used since start: %1$s</string>
+  <string name="total_used">Total used since start: %1$s</string>
+  <string name="used_allowance">All-time use: %1$s</string>
+  <string name="remaining">Remaining: %1$s</string>
+  <string name="exhausted">Data allowances exhausted</string>
+  <string name="reset">Reset used data</string>
+  <string name="reset_confirm">Reset this connection’s allowance usage? Session usage stays unchanged.</string>
+  <string name="save">Save</string>
+  <string name="cancel">Cancel</string>
+  <string name="confirm">Reset</string>
+  <string name="reset_all">Reset all limits and connections</string>
+  <string name="reset_all_confirm">This clears every speed limit and data allowance, resets allowance usage, closes active connections, and scans the available networks again. Session usage stays unchanged.</string>
+  <string name="error">Unable to complete the operation. Original diagnostic:</string>
+  <string name="scope">Allowances count upload and download relayed by net-merge while it operates. They are not your ISP’s billing total. Usage is saved every second; buffered traffic and an unsaved checkpoint can affect the cutoff.</string>
+  <string name="disconnected">Disconnected</string>
+  <string name="language">Language</string>
+  <string name="community">Rebranded for Iraq PC Community on Facebook</string>
+  <string name="credits">MIT license. Based on net-merge by Rohit Mahto and the Android port by SenseiRedsmoke.</string>
+  <string name="connection">Connection</string>
+  <string name="checking">Checking…</string>
+  <string name="up">Connected</string>
+  <string name="no_internet">No internet</string>
+  <string name="link">https://www.facebook.com/groups/1088749137864406/</string>
+  <string name="wifi">Wi-Fi</string>
+  <string name="mobile_data">Mobile data</string>
+  <string name="community_banner">Iraq PC Community</string>
+</resources>

@@ -4,14 +4,14 @@
 # createrepo_c and gpg, with the signing key already in the keyring. The Alpine and Arch
 # repositories are added to the same site by build-container-repos.sh.
 #
-#   GPG_KEY_ID=<fingerprint> REPO_BASE_URL=https://pkg.net-merge.org \
+#   GPG_KEY_ID=<fingerprint> REPO_BASE_URL=https://your-package-host.example \
 #       scripts/build-repos.sh PKG_DIR OUT_DIR
 set -euo pipefail
 PKGS=$(realpath "${1:?usage: build-repos.sh PKG_DIR OUT_DIR}")
 mkdir -p "${2:?usage: build-repos.sh PKG_DIR OUT_DIR}"
 OUT=$(realpath "$2")
 KEY=${GPG_KEY_ID:?set GPG_KEY_ID to the signing key fingerprint}
-BASE=${REPO_BASE_URL:-https://pkg.net-merge.org}
+BASE=${REPO_BASE_URL:?set REPO_BASE_URL to the URL hosting this community repository}
 sign() { gpg --batch --yes --pinentry-mode loopback --local-user "$KEY" "$@"; }
 
 rm -rf "$OUT"/*
@@ -65,11 +65,11 @@ cat > "$OUT/index.html" <<HTML
 <title>net-merge packages</title>
 <style>body{font:16px/1.5 system-ui,sans-serif;max-width:46rem;margin:2rem auto;padding:0 1rem}pre{background:#f3f4f6;padding:.8rem;overflow:auto;border-radius:6px}@media(prefers-color-scheme:dark){body{background:#0b1220;color:#e5e7eb}pre{background:#111827}a{color:#4ade80}}</style>
 <h1>net-merge packages</h1>
-<p>Use all your internet connections at once. <a href="https://github.com/net-merge/net-merge">Project on GitHub</a>.
+<p>Use all your internet connections at once. <a href="https://github.com/DodoBird-debian/net-merge">Iraq PC Community fork on GitHub</a>.
 Signing key fingerprint: <code>$KEY</code>.</p>
 <h2>Any Linux or macOS: one line</h2>
-<pre>curl -fsSL https://raw.githubusercontent.com/net-merge/net-merge/main/install.sh | sh</pre>
-<p>It uses your package manager when it can. Or set it up by hand:</p>
+<pre>curl -fsSL https://raw.githubusercontent.com/DodoBird-debian/net-merge/main/install.sh | sh</pre>
+<p>This installs the community release tarball. To use this signed package repository instead, set it up by hand:</p>
 <h2>Debian, Ubuntu, Mint, Pop!_OS, Raspberry Pi OS</h2>
 <pre>curl -fsSL $BASE/apt/key.gpg | sudo tee /usr/share/keyrings/net-merge.gpg &gt;/dev/null
 echo "deb [signed-by=/usr/share/keyrings/net-merge.gpg] $BASE/apt stable main" | sudo tee /etc/apt/sources.list.d/net-merge.list
@@ -90,7 +90,7 @@ sudo pacman -Sy net-merge</pre>
 <pre>sudo wget -O /etc/apk/keys/net-merge.rsa.pub $BASE/apk/net-merge.rsa.pub
 echo $BASE/apk | sudo tee -a /etc/apk/repositories
 sudo apk add net-merge</pre>
-<p>Everything else: the <code>.tar.gz</code> for your CPU on the <a href="https://github.com/net-merge/net-merge/releases/latest">releases page</a>.</p>
+<p>Everything else: the <code>.tar.gz</code> for your CPU on the <a href="https://github.com/DodoBird-debian/net-merge/releases/latest">community releases page</a>.</p>
 HTML
 touch "$OUT/.nojekyll"
 echo "built apt and dnf repositories in $OUT"

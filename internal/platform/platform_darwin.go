@@ -3,6 +3,7 @@ package platform
 import (
 	"fmt"
 	"log"
+	"net-merge/internal/i18n"
 	"os"
 	"os/exec"
 	"strings"
@@ -92,7 +93,7 @@ func RelaunchElevated(args []string, hidden bool) error {
 	// Detached: the dialog returns at once and the root process keeps running without us.
 	script := `do shell script "` + strings.NewReplacer(`\`, `\\`, `"`, `\"`).Replace(cmd+" >/dev/null 2>&1 &") + `" with administrator privileges`
 	if out, err := exec.Command("/usr/bin/osascript", "-e", script).CombinedOutput(); err != nil {
-		return fmt.Errorf("administrator prompt failed: %s", strings.TrimSpace(string(out)))
+		return fmt.Errorf(i18n.T("administrator prompt failed: %s"), strings.TrimSpace(string(out)))
 	}
 	return nil
 }

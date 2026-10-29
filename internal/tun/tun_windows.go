@@ -3,6 +3,7 @@ package tun
 import (
 	"fmt"
 	"net"
+	"net-merge/internal/i18n"
 	"net/netip"
 	"os"
 	"os/exec"
@@ -53,7 +54,7 @@ func configure(name string, mtu int, ip4 netip.Prefix) (int, error) {
 	for try := 1; !hasAddr(ifc, addr); try++ {
 		if try > 20 {
 			if err == nil {
-				err = fmt.Errorf("adapter %q did not keep its address %s", name, addr)
+				err = fmt.Errorf(i18n.T("adapter %q did not keep its address %s"), name, addr)
 			}
 			return ifc.Index, err
 		}
@@ -68,7 +69,7 @@ func configure(name string, mtu int, ip4 netip.Prefix) (int, error) {
 	// segments to it and fragments bigger UDP datagrams instead of sending packets the stack drops.
 	mtuArg := "mtu=" + strconv.Itoa(mtu)
 	if e := run("netsh", "interface", "ipv4", "set", "subinterface", "interface="+idx, mtuArg, "store=active"); e != nil {
-		logx.Printf("warning: could not set IPv4 MTU: %v\n", e)
+		logx.Printf(i18n.T("warning: could not set IPv4 MTU: %v\n"), e)
 	}
 	for _, dst := range routes4win {
 		if err = run("route", "add", dst[0], "mask", dst[1], "0.0.0.0", "metric", "1", "if", idx); err != nil {
@@ -77,14 +78,14 @@ func configure(name string, mtu int, ip4 netip.Prefix) (int, error) {
 	}
 	// IPv6 is best-effort: if it can't be set up, IPv4 still works and IPv6 stays on its normal path.
 	if e := run("netsh", "interface", "ipv6", "add", "address", "interface="+idx, "address="+tunIP6+"/64", "store=active"); e != nil {
-		logx.Printf("warning: IPv6 not captured: %v\n", e)
+		logx.Printf(i18n.T("warning: IPv6 not captured: %v\n"), e)
 	} else {
 		if e := run("netsh", "interface", "ipv6", "set", "subinterface", "interface="+idx, mtuArg, "store=active"); e != nil {
-			logx.Printf("warning: could not set IPv6 MTU: %v\n", e)
+			logx.Printf(i18n.T("warning: could not set IPv6 MTU: %v\n"), e)
 		}
 		for _, p := range routes6 {
 			if e := run("netsh", "interface", "ipv6", "add", "route", "prefix="+p, "interface="+idx, "metric=1", "store=active"); e != nil {
-				logx.Printf("warning: IPv6 route %s: %v\n", p, e)
+				logx.Printf(i18n.T("warning: IPv6 route %s: %v\n"), p, e)
 			}
 		}
 	}
@@ -119,7 +120,7 @@ func waitIface(name string, d time.Duration) (*net.Interface, error) {
 			return ifc, nil
 		}
 		if time.Now().After(deadline) {
-			return nil, fmt.Errorf("adapter %q did not appear: %w", name, err)
+			return nil, fmt.Errorf(i18n.T("adapter %q did not appear: %w"), name, err)
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
@@ -196,7 +197,7 @@ func syncStrongHost(stop chan struct{}) {
 	ps.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	out, err := ps.Output()
 	if err != nil {
-		logx.Printf("warning: could not check the adapters' weak host setting: %v\n", err)
+		logx.Printf(i18n.T("warning: could not check the adapters' weak host setting: %v\n"), err)
 		return
 	}
 	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
@@ -210,11 +211,10 @@ func syncStrongHost(stop chan struct{}) {
 		}
 		if err := run("netsh", "interface", fam, "set", "interface", "interface="+f[1],
 			"weakhostsend=disabled", "forwarding=disabled", "store=active"); err != nil {
-			logx.Printf("warning: %v\n", err)
+			logx.Printf(i18n.T("warning: %v\n"), err)
 			continue
 		}
-		strongHost.restore = append(strongHost.restore, fmt.Sprintf("%s %s weakhostsend=%s forwarding=%s",
-			fam, f[1], strings.ToLower(f[2]), strings.ToLower(f[3])))
+		strongHost.restore = append(strongHost.restore, fmt.Sprintf(i18n.T("%s %s weakhostsend=%s forwarding=%s"), fam, f[1], strings.ToLower(f[2]), strings.ToLower(f[3])))
 		logx.Printf("note: turned off weak host send and forwarding on adapter %s (%s) while merging; "+
 			"Windows ignores pinned connections there. Sharing its connection (Mobile Hotspot) pauses until net-merge is off.\n", f[1], f[0])
 	}

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net-merge/internal/i18n"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,7 +14,7 @@ import (
 )
 
 // Repo is where releases are read from.
-const Repo = "net-merge/net-merge"
+const Repo = "DodoBird-debian/net-merge"
 
 // ReleasesURL is what the tray opens: GitHub redirects it to the newest release.
 const ReleasesURL = "https://github.com/" + Repo + "/releases/latest"
@@ -37,7 +38,7 @@ func Latest(ctx context.Context) (string, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("github: %s", resp.Status)
+		return "", fmt.Errorf(i18n.T("github: %s"), resp.Status)
 	}
 	var rel struct {
 		TagName string `json:"tag_name"`
@@ -48,7 +49,7 @@ func Latest(ctx context.Context) (string, error) {
 		return "", err
 	}
 	if rel.TagName == "" {
-		return "", fmt.Errorf("github: no tag_name in the release")
+		return "", fmt.Errorf("%s", i18n.T("github: no tag_name in the release"))
 	}
 	return rel.TagName, nil
 }

@@ -4,6 +4,7 @@ import (
 	"math"
 	"math/rand/v2"
 	"net"
+	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -35,7 +36,10 @@ func (l linkState) String() string {
 	return [...]string{"checking", "up", "no internet"}[l]
 }
 
-type slotAddr struct{ ip4, ip6 net.IP }
+type slotAddr struct {
+	ip4, ip6 net.IP
+	index    int
+}
 
 // Slot is a NIC plus its live counters. Counters are atomic so the data path never takes a lock.
 type Slot struct {
@@ -48,6 +52,10 @@ type Slot struct {
 	actF                  [2]atomic.Int64
 	bytesIn, bytesOut     [2]atomic.Int64
 	probing               [2]atomic.Bool
+	quota                 quotaState
+	paused                atomic.Bool
+	storageBlocked        atomic.Bool
+	notify                chan struct{}
 	limit                 atomic.Pointer[limitPair] // nil = unlimited; see limit.go
 
 	// guarded by Scheduler.mu
@@ -114,35 +122,45 @@ func (sl *Slot) ip(f Family) net.IP {
 }
 
 type SlotStats struct {
-	Name              string
-	IP                string
-	IP6               string
-	State             string // IPv4 probe state, "-" if the adapter has no IPv4
-	State6            string
-	Weight, Weight6   float64
-	Present           bool
-	Active, Total     int64
-	Failed            int64
-	BytesIn, BytesOut int64
-	RateIn, RateOut   float64 // through net-merge, both families summed (bytes/s)
-	LinkIn, LinkOut   float64 // through the adapter by any app, from the OS's counters (bytes/s)
-	Peak, Peak6       float64
-	LimitMbps         float64 // cap in Mbit/s, 0 = unlimited
+	ID                  string
+	Name                string
+	IP                  string
+	IP6                 string
+	State               string // IPv4 probe state, "-" if the adapter has no IPv4
+	State6              string
+	Weight, Weight6     float64
+	Present             bool
+	Active, Total       int64
+	Failed              int64
+	BytesIn, BytesOut   int64
+	RateIn, RateOut     float64 // through net-merge, both families summed (bytes/s)
+	LinkIn, LinkOut     float64 // through the adapter by any app, from the OS's counters (bytes/s)
+	Peak, Peak6         float64
+	LimitMbps           float64 // cap in Mbit/s, 0 = unlimited
+	SessionBytes        int64
+	QuotaBytes          int64
+	QuotaUsedBytes      int64
+	QuotaRemainingBytes int64 // -1 for unlimited
+	QuotaExhausted      bool
 }
 
 // Scheduler uses weighted least-busy-flows per address family. Automatic mode
 // discounts idle TCP sockets; static mode
 // retains weighted least-open-flows. Data transfer accounting stays lock-free.
 type Scheduler struct {
-	mu     sync.Mutex
-	slots  []*Slot
-	auto   bool
-	limits map[string]float64 // adapter name -> Mbit/s, 0 or absent = unlimited
-	now    func() time.Time
+	mu           sync.Mutex
+	slots        []*Slot
+	auto         bool
+	limits       map[string]float64 // adapter name -> Mbit/s, 0 or absent = unlimited
+	now          func() time.Time
+	paused       bool
+	storageError string
+	quotaRecords map[string]QuotaRecord
+	QuotaChanged chan struct{}
 }
 
 func NewScheduler(nics []nics.Nic) *Scheduler {
-	s := &Scheduler{now: time.Now}
+	s := &Scheduler{now: time.Now, quotaRecords: map[string]QuotaRecord{}, QuotaChanged: make(chan struct{}, 1)}
 	s.Update(nics)
 	return s
 }
@@ -162,15 +180,18 @@ func (s *Scheduler) SetLimit(name string, mbitPerSec float64) {
 	if s.limits == nil {
 		s.limits = map[string]float64{}
 	}
-	if mbitPerSec <= 0 {
-		delete(s.limits, name)
-	} else {
-		s.limits[name] = mbitPerSec
-	}
+	id := name
 	for _, sl := range s.slots {
-		if sl.key == name {
+		if sl.key == name || sl.Name == name {
+			id = sl.key
+			delete(s.limits, sl.Name)
 			sl.setLimit(mbitPerSec)
 		}
+	}
+	if mbitPerSec <= 0 {
+		delete(s.limits, id)
+	} else {
+		s.limits[id] = mbitPerSec
 	}
 }
 
@@ -185,7 +206,14 @@ func (s *Scheduler) SetLimits(limits map[string]float64) {
 		}
 	}
 	for _, sl := range s.slots {
-		sl.setLimit(s.limits[sl.key])
+		v := s.limitFor(sl.key, sl.Name)
+		if sl.key != sl.Name {
+			delete(s.limits, sl.Name)
+			if v > 0 {
+				s.limits[sl.key] = v
+			}
+		}
+		sl.setLimit(v)
 	}
 }
 
@@ -201,7 +229,7 @@ func (s *Scheduler) Limits() map[string]float64 {
 }
 
 func normAddr(n nics.Nic) *slotAddr {
-	a := &slotAddr{}
+	a := &slotAddr{index: n.Index}
 	if n.IP != nil {
 		a.ip4 = n.IP.To4()
 	}
@@ -224,19 +252,24 @@ func (s *Scheduler) Update(nics []nics.Nic) {
 		na := normAddr(n)
 		var found *Slot
 		for _, sl := range s.slots {
-			if sl.key == n.Name {
+			if sl.key == nicKey(n) {
 				found = sl
 				break
 			}
 		}
 		if found == nil {
-			sl := &Slot{Name: n.Name, Index: n.Index, key: n.Name, weight: [2]float64{n.Weight, n.Weight}, present: true}
+			sl := &Slot{Name: n.Name, Index: n.Index, key: nicKey(n), notify: s.QuotaChanged, weight: [2]float64{n.Weight, n.Weight}, present: true}
 			sl.addr.Store(na)
-			sl.setLimit(s.limits[n.Name])
+			sl.setLimit(s.limitFor(sl.key, n.Name))
+			sl.paused.Store(s.paused)
+			sl.storageBlocked.Store(s.storageError != "")
+			r := s.quotaRecords[sl.key]
+			sl.quota.limit, sl.quota.used = r.LimitBytes, r.UsedBytes
 			s.slots = append(s.slots, sl)
 			continue
 		}
 		found.present = true
+		found.Name, found.Index = n.Name, n.Index
 		if !s.auto {
 			found.weight = [2]float64{n.Weight, n.Weight}
 		}
@@ -255,17 +288,12 @@ func (s *Scheduler) Update(nics []nics.Nic) {
 				}
 			}
 		}
-		if !old.ip4.Equal(na.ip4) || !old.ip6.Equal(na.ip6) {
+		if !old.ip4.Equal(na.ip4) || !old.ip6.Equal(na.ip6) || old.index != na.index {
 			found.addr.Store(na)
 		}
 	}
-	kept := s.slots[:0]
-	for _, sl := range s.slots {
-		if sl.present || sl.active.Load() > 0 {
-			kept = append(kept, sl)
-		}
-	}
-	s.slots = kept
+	// Retain departed adapters: session totals and manual allowances must survive reconnects.
+
 }
 
 // A NIC counts as measured once it has carried this much (bytes/s, about 0.4 Mbit/s).
@@ -292,7 +320,7 @@ func (s *Scheduler) Tick(dt time.Duration) {
 
 	samples := make([]sample, len(slots))
 	for i, sl := range slots {
-		in, out, ok := nics.Octets(sl.Index)
+		in, out, ok := nics.Octets(sl.ifIndex())
 		samples[i] = sample{in, out, ok}
 	}
 
@@ -328,6 +356,9 @@ func (s *Scheduler) Tick(dt time.Duration) {
 			in, out := sl.bytesIn[f].Load(), sl.bytesOut[f].Load()
 			sl.rateIn[f] = float64(in-sl.lastIn[f]) / sec
 			sl.rateOut[f] = float64(out-sl.lastOut[f]) / sec
+			if sl.paused.Load() {
+				sl.rateIn[f], sl.rateOut[f] = 0, 0
+			}
 			sl.lastIn[f], sl.lastOut[f] = in, out
 			r := sl.rateIn[f] + sl.rateOut[f]
 			if r >= minMeasuredPeak && r >= 0.05*sl.peak[f] {
@@ -393,7 +424,7 @@ func (s *Scheduler) AcquireFor(f Family, skip map[string]struct{}) *Slot {
 	// looks dead, flows still go somewhere rather than nowhere.
 	var tiers [3][]*Slot
 	for _, sl := range s.slots {
-		if !sl.present || sl.ip(f) == nil {
+		if !sl.present || sl.ip(f) == nil || !sl.allowed() {
 			continue
 		}
 		if _, no := skip[sl.key]; no {
@@ -444,7 +475,7 @@ func (s *Scheduler) V6Usable() bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, sl := range s.slots {
-		if sl.present && sl.ip(Fam6) != nil && sl.state[Fam6] != stateDown {
+		if sl.present && sl.allowed() && sl.ip(Fam6) != nil && sl.state[Fam6] != stateDown {
 			return true
 		}
 	}
@@ -459,7 +490,7 @@ func (s *Scheduler) V6CoversAll() bool {
 	defer s.mu.Unlock()
 	any6 := false
 	for _, sl := range s.slots {
-		if !sl.present {
+		if !sl.present || !sl.allowed() {
 			continue
 		}
 		has6 := sl.ip(Fam6) != nil && sl.state[Fam6] != stateDown
@@ -505,7 +536,7 @@ func (s *Scheduler) Snapshot() []SlotStats {
 	for _, sl := range s.slots {
 		a := sl.addr.Load()
 		st := SlotStats{
-			Name: sl.Name, State: "-", State6: "-", Present: sl.present,
+			ID: sl.key, Name: sl.Name, State: "-", State6: "-", Present: sl.present,
 			Weight: sl.weight[Fam4], Weight6: sl.weight[Fam6],
 			Active: sl.active.Load(), Total: sl.total.Load(), Failed: sl.failed.Load(),
 			BytesIn:  sl.bytesIn[Fam4].Load() + sl.bytesIn[Fam6].Load(),
@@ -515,12 +546,45 @@ func (s *Scheduler) Snapshot() []SlotStats {
 			Peak: sl.peak[Fam4], Peak6: sl.peak[Fam6],
 			LimitMbps: sl.limitMbps(),
 		}
+		st.SessionBytes = st.BytesIn + st.BytesOut
+		r := sl.quotaSnapshot()
+		st.QuotaBytes, st.QuotaUsedBytes = r.LimitBytes, r.UsedBytes
+		st.QuotaRemainingBytes = -1
+		if r.LimitBytes > 0 {
+			st.QuotaRemainingBytes = max(0, r.LimitBytes-r.UsedBytes)
+		}
+		st.QuotaExhausted = r.LimitBytes > 0 && r.UsedBytes >= r.LimitBytes
 		if a.ip4 != nil {
 			st.IP, st.State = a.ip4.String(), sl.state[Fam4].String()
 		}
 		if a.ip6 != nil {
 			st.IP6, st.State6 = a.ip6.String(), sl.state[Fam6].String()
 		}
+		out = append(out, st)
+	}
+	seen := map[string]bool{}
+	for _, st := range out {
+		seen[st.ID] = true
+	}
+	ids := make([]string, 0, len(s.quotaRecords))
+	for id := range s.quotaRecords {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	for _, id := range ids {
+		r := s.quotaRecords[id]
+		if seen[id] {
+			continue
+		}
+		st := SlotStats{ID: id, Name: r.Name, State: "-", State6: "-", QuotaBytes: r.LimitBytes, QuotaUsedBytes: r.UsedBytes, QuotaRemainingBytes: -1}
+		if st.Name == "" {
+			st.Name = id
+		}
+		if r.LimitBytes > 0 {
+			st.QuotaRemainingBytes = max(0, r.LimitBytes-r.UsedBytes)
+			st.QuotaExhausted = r.UsedBytes >= r.LimitBytes
+		}
+		st.LimitMbps = s.limitFor(id, st.Name)
 		out = append(out, st)
 	}
 	return out

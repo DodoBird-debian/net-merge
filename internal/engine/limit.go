@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"net-merge/internal/i18n"
 	"strconv"
 	"strings"
 	"sync"
@@ -83,17 +84,17 @@ const LimitMaxMbps = 1e6
 // 0 for no cap. Both the tray and `net-merge limit` use it, so both accept the same spellings and
 // reject the same nonsense.
 func ParseLimit(s string) (float64, error) {
-	t := strings.TrimSpace(s)
+	t := NormalizeNumber(s)
 	switch strings.ToLower(t) {
 	case "unlimited", "off", "none":
 		return 0, nil
 	}
 	mbitPerSec, err := strconv.ParseFloat(t, 64)
 	if err != nil || math.IsNaN(mbitPerSec) || math.IsInf(mbitPerSec, 0) {
-		return 0, fmt.Errorf("enter a speed in Mbit/s, like 50 or 7.5 (0 for unlimited)")
+		return 0, fmt.Errorf("%s", i18n.T("enter a speed in Mbit/s, like 50 or 7.5 (0 for unlimited)"))
 	}
 	if mbitPerSec < 0 || mbitPerSec > LimitMaxMbps {
-		return 0, fmt.Errorf("the speed must be between 0 and %.0f Mbit/s", float64(LimitMaxMbps))
+		return 0, fmt.Errorf(i18n.T("the speed must be between 0 and %.0f Mbit/s"), float64(LimitMaxMbps))
 	}
 	return mbitPerSec, nil
 }
@@ -168,6 +169,9 @@ func (sl *Slot) writePaced(dst io.Writer, p []byte, down bool) (int, error) {
 	}
 	written := 0
 	for len(p) > 0 {
+		if !sl.allowed() {
+			return written, ErrQuota
+		}
 		k := min(len(p), pair.chunk)
 		sl.throttle(down, k)
 		n, err := dst.Write(p[:k])

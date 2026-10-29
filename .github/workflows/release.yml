@@ -1,153 +1,140 @@
 name: release
-# Push a tag like v0.2.0 to build the installer and portable zip and publish a GitHub release.
-# The release notes are that version's section of CHANGELOG.md; the run fails early if it's missing.
 on:
   push:
     tags: ['v*']
-
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version
+        default: '0.4.1'
+        type: string
+      publish:
+        description: Publish after all builds and checks pass
+        default: false
+        type: boolean
 permissions:
-  contents: write
-
+  contents: read
 jobs:
-  release:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      value: ${{ steps.version.outputs.value }}
+    steps:
+      - id: version
+        env:
+          REQUESTED_VERSION: ${{ inputs.version || '0.4.1' }}
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then v=${GITHUB_REF_NAME#v}; else v=$REQUESTED_VERSION; fi
+          python3 -c 'import re,sys; assert re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+",sys.argv[1]), "invalid version"' "$v"
+          echo "value=$v" >> "$GITHUB_OUTPUT"
+  windows:
+    needs: version
+    env:
+      APP_VERSION: ${{ needs.version.outputs.value }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Release notes from CHANGELOG.md
-        shell: pwsh
-        run: scripts/release-notes.ps1 -Version ('${{ github.ref_name }}'.TrimStart('v')) -Out release-notes.md
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - name: Install Inno Setup
-        run: choco install innosetup --no-progress -y
-      - name: Build installer
+      - run: choco install innosetup --no-progress -y
+      - name: Test and build Windows
         shell: pwsh
         run: |
-          $version = '${{ github.ref_name }}'.TrimStart('v')
-          scripts/build.ps1 -Version $version -RepoUrl "${{ github.server_url }}/${{ github.repository }}"
-      - name: Publish release
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          $tag = '${{ github.ref_name }}'
-          $title = 'net-merge ' + $tag.TrimStart('v')
-          $files = Get-ChildItem dist/net-merge-setup-*.exe, dist/net-merge-*-portable.zip
-          gh release view $tag *> $null
-          if ($LASTEXITCODE -eq 0) {   # release already created by hand: refresh files and notes
-            gh release upload $tag $files --clobber
-            gh release edit $tag --title $title --notes-file release-notes.md
-          } else {
-            gh release create $tag $files --title $title --notes-file release-notes.md
-          }
-
-  # Adds the Linux builds to the release the Windows job creates: for every CPU a tarball, a .deb,
-  # .rpm, .apk and an Arch package. Pure Go, so no cgo and no cross-compiler: one runner builds them all.
+          go test -race -timeout 5m ./...
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          scripts/build.ps1 -Version $env:APP_VERSION -RepoUrl "${{ github.server_url }}/${{ github.repository }}"
+          go build -o dist/winfakeup.exe ./scripts/winfakeup
+          scripts/windows-smoke.ps1 dist/net-merge.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-windows
+          path: |
+            dist/net-merge-setup-*.exe
+            dist/net-merge-*-portable.zip
+          if-no-files-found: error
   linux:
-    needs: release
+    needs: version
+    env:
+      APP_VERSION: ${{ needs.version.outputs.value }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - name: Install nfpm
-        run: go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.48.0
-      - name: Build tarballs and packages
-        run: |
-          v='${{ github.ref_name }}'; v=${v#v}
-          scripts/build-linux.sh "$v" dist
-          ls dist
-      - name: Upload to the release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release upload '${{ github.ref_name }}' dist/* --clobber
-
-  # Rebuilds the signed apt, dnf/zypper, Alpine and Arch repositories from the packages of the last
-  # two releases and publishes them on GitHub Pages: sudo apt install net-merge, dnf, zypper, apk,
-  # pacman. Needs the secrets APT_GPG_PRIVATE_KEY (armored private signing key) and
-  # APK_RSA_PRIVATE_KEY (PEM), and Pages set to "GitHub Actions".
-  repos:
-    needs: linux
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install tools
-        run: sudo apt-get update && sudo apt-get install -y apt-utils createrepo-c gnupg
-      - name: Import the signing keys
-        env:
-          APT_GPG_PRIVATE_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
-          APK_RSA_PRIVATE_KEY: ${{ secrets.APK_RSA_PRIVATE_KEY }}
-        run: |
-          test -n "$APT_GPG_PRIVATE_KEY" || { echo "secret APT_GPG_PRIVATE_KEY is not set"; exit 1; }
-          test -n "$APK_RSA_PRIVATE_KEY" || { echo "secret APK_RSA_PRIVATE_KEY is not set"; exit 1; }
-          echo "$APT_GPG_PRIVATE_KEY" | gpg --batch --import
-          echo "GPG_KEY_ID=$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr/{print $10; exit}')" >> "$GITHUB_ENV"
-          # apk finds the key by file name, so it must be called net-merge.rsa
-          echo "$APK_RSA_PRIVATE_KEY" > "$RUNNER_TEMP/net-merge.rsa"
-          openssl rsa -in "$RUNNER_TEMP/net-merge.rsa" -pubout -out "$RUNNER_TEMP/net-merge.rsa.pub"
-          echo "APK_KEY=$RUNNER_TEMP/net-merge.rsa" >> "$GITHUB_ENV"
-      - name: Collect the packages of the last two releases
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          mkdir pkgs
-          # two, not all: every release adds about 200 MB and a Pages site may not pass 1 GB
-          for tag in $(gh release list --limit 2 --json tagName -q '.[].tagName'); do
-            gh release download "$tag" --pattern '*.deb' --pattern '*.rpm' --pattern '*.apk' --pattern '*.pkg.tar.zst' --dir pkgs --skip-existing 2>/dev/null || true
-          done
-          ls pkgs | wc -l
-      - name: Build the repositories
-        env:
-          # pkg.net-merge.org passes requests through to this Pages site (net-merge/website, pkg.ts)
-          REPO_BASE_URL: https://pkg.net-merge.org
-        run: |
-          scripts/build-repos.sh pkgs site
-          scripts/build-container-repos.sh pkgs site
-          du -sh site
-          test "$(du -sm site | cut -f1)" -lt 900 || { echo "site is too big for GitHub Pages"; exit 1; }
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - run: go vet ./... && go test -race -timeout 5m ./...
+      - run: go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.48.0
+      - run: scripts/build-linux.sh "$APP_VERSION" dist
+      - uses: actions/upload-artifact@v4
         with:
-          path: site
-      - id: deploy
-        uses: actions/deploy-pages@v4
-
-  # Version-less copies of the downloads, for links that always give the newest release.
-  aliases:
-    needs: [linux, macos]
-    uses: ./.github/workflows/release-aliases.yml
-    with:
-      tag: ${{ github.ref_name }}
-
-  # Adds the macOS build to the release the Windows job creates.
+          name: build-linux
+          path: dist/*
+          if-no-files-found: error
   macos:
-    needs: release
+    needs: version
+    env:
+      APP_VERSION: ${{ needs.version.outputs.value }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - name: Build universal binary
+      - name: Test and build universal binary
         run: |
-          v='${{ github.ref_name }}'; v=${v#v}
+          sudo ifconfig lo0 alias 127.0.0.2/32
+          sudo ifconfig lo0 alias 127.0.0.3/32
+          go test -race -timeout 5m ./...
           for arch in arm64 amd64; do
-            CGO_ENABLED=1 GOARCH=$arch go build -ldflags "-s -w -X main.version=$v" -o net-merge-$arch ./cmd/net-merge
+            CGO_ENABLED=1 GOARCH=$arch go build -trimpath -ldflags "-s -w -X main.version=$APP_VERSION" -o net-merge-$arch ./cmd/net-merge
           done
           lipo -create -output net-merge net-merge-arm64 net-merge-amd64
-          codesign --force --sign - net-merge   # ad-hoc: lipo invalidates the per-arch signatures
+          codesign --force --sign - net-merge
+          lipo net-merge -verify_arch arm64 x86_64
           mkdir dist
-          tar -czf dist/net-merge-$v-macos-universal.tar.gz net-merge LICENSE THIRD-PARTY-NOTICES.md
-      - name: Upload to the release
+          tar -czf "dist/net-merge-$APP_VERSION-macos-universal.tar.gz" net-merge LICENSE THIRD-PARTY-NOTICES.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-macos
+          path: dist/*
+          if-no-files-found: error
+  phones:
+    needs: version
+    uses: ./.github/workflows/phone-builds.yml
+    with:
+      version: ${{ needs.version.outputs.value }}
+    secrets: inherit
+  publish:
+    if: startsWith(github.ref, 'refs/tags/') || inputs.publish
+    needs: [version, windows, linux, macos, phones]
+    env:
+      APP_VERSION: ${{ needs.version.outputs.value }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: build-*
+          path: dist
+          merge-multiple: true
+      - name: Require full CI on the release commit
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload '${{ github.ref_name }}' dist/net-merge-*-macos-universal.tar.gz --clobber
+        run: python3 scripts/wait-release-ci.py
+      - name: Check release set and create stable download aliases
+        run: |
+          python3 scripts/prepare-release.py dist "$APP_VERSION"
+      - name: Publish complete release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/release-notes.py "$APP_VERSION" > release-notes.md
+          tag="v$APP_VERSION"
+          # Keep partial uploads private. A failed upload leaves a recoverable draft.
+          gh release view "$tag" >/dev/null 2>&1 || gh release create "$tag" --draft --target "$GITHUB_SHA" --title "net-merge $APP_VERSION · Iraq PC Community" --notes-file release-notes.md
+          gh release upload "$tag" dist/* --clobber
+          gh release edit "$tag" --draft=false --latest --notes-file release-notes.md

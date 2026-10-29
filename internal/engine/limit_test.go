@@ -100,7 +100,8 @@ func TestPumpHonoursLimit(t *testing.T) {
 	defer dstW.Close()
 
 	var counted atomic.Int64
-	go pump(dstW, srcR, &counted, sl, false, &flowActivity{})
+	done := make(chan struct{})
+	go func() { pump(dstW, srcR, &counted, sl, false, &flowActivity{}); close(done) }()
 	go func() {
 		srcW.Write(make([]byte, 32<<10))
 		srcW.Close()
@@ -114,6 +115,7 @@ func TestPumpHonoursLimit(t *testing.T) {
 	if d := time.Since(start); d < 100*time.Millisecond {
 		t.Fatalf("32 KB at 100 KB/s took %s, want at least ~164 ms", d)
 	}
+	<-done // the final successful write must return before its bytes can be accounted
 	if n := counted.Load(); n != int64(len(got)) {
 		t.Fatalf("counted %d bytes, want %d", n, len(got))
 	}

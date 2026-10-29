@@ -3,6 +3,7 @@ package platform
 import (
 	"errors"
 	"fmt"
+	"net-merge/internal/i18n"
 	"os"
 	"os/exec"
 	"os/user"
@@ -20,7 +21,7 @@ func signInUser() (*user.User, error) {
 	}
 	uid := os.Getenv("SUDO_UID")
 	if uid == "" || uid == "0" {
-		return nil, errors.New("start at sign-in needs the tray started from your account (sudo sets SUDO_UID)")
+		return nil, errors.New(i18n.T("start at sign-in needs the tray started from your account (sudo sets SUDO_UID)"))
 	}
 	return user.LookupId(uid)
 }
@@ -34,7 +35,7 @@ func agentPath(u *user.User) string {
 // passwordless rule; otherwise sign-in would need a password the agent can't type.
 func Autostart(action string) error {
 	if os.Geteuid() == 0 {
-		return errors.New("run this as your normal user, not with sudo")
+		return errors.New(i18n.T("run this as your normal user, not with sudo"))
 	}
 	u, err := signInUser()
 	if err != nil {
@@ -47,19 +48,19 @@ func Autostart(action string) error {
 		if AutostartEnabled() {
 			fmt.Println("autostart is ON (" + path + ").")
 		} else {
-			fmt.Println("autostart is OFF.")
+			fmt.Println(i18n.T("autostart is OFF."))
 		}
 		return nil
 	case "off":
 		exec.Command("/bin/launchctl", "bootout", domain+"/"+agentLabel).Run() // not loaded is fine
 		if !AutostartEnabled() {
-			fmt.Println("autostart is already OFF.")
+			fmt.Println(i18n.T("autostart is already OFF."))
 			return nil
 		}
 		if err := SetAutostart(false); err != nil {
 			return err
 		}
-		fmt.Println("autostart is OFF.")
+		fmt.Println(i18n.T("autostart is OFF."))
 		return nil
 	}
 	if err := SetAutostart(true); err != nil {
@@ -67,7 +68,7 @@ func Autostart(action string) error {
 	}
 	exec.Command("/bin/launchctl", "bootout", domain+"/"+agentLabel).Run()
 	if out, err := exec.Command("/bin/launchctl", "bootstrap", domain, path).CombinedOutput(); err != nil {
-		return fmt.Errorf("launchctl bootstrap: %w: %s", err, out)
+		return fmt.Errorf(i18n.T("launchctl bootstrap: %w: %s"), err, out)
 	}
 	fmt.Println("autostart is ON: net-merge starts at sign-in (" + path + ").")
 	return nil
@@ -103,7 +104,7 @@ func SetAutostart(on bool) error {
 		check = append([]string{"-U", u.Username}, check...) // root may always; ask about the user
 	}
 	if exec.Command("/usr/bin/sudo", check...).Run() != nil {
-		return errors.New("the tray can't start at sign-in without the passwordless rule; run once: sudo net-merge install")
+		return errors.New(i18n.T("the tray can't start at sign-in without the passwordless rule; run once: sudo net-merge install"))
 	}
 	log := filepath.Join(u.HomeDir, "Library", "Logs", "net-merge.log")
 	plist := `<?xml version="1.0" encoding="UTF-8"?>

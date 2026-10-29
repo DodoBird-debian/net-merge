@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net-merge/internal/i18n"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -22,7 +23,7 @@ var safeUser = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
 // overwrite files. Uninstall removes both.
 func Install(uninstall bool) error {
 	if !IsAdmin() {
-		return errors.New("run: sudo net-merge install")
+		return errors.New(i18n.T("run: sudo net-merge install"))
 	}
 	if uninstall {
 		exe := InstalledExe()
@@ -43,7 +44,7 @@ func Install(uninstall bool) error {
 	}
 	user := os.Getenv("SUDO_USER")
 	if user == "" || user == "root" || !safeUser.MatchString(user) {
-		return errors.New("run it through sudo from your own account: sudo net-merge install")
+		return errors.New(i18n.T("run it through sudo from your own account: sudo net-merge install"))
 	}
 	exe := exePreferred
 	if rootOnly(filepath.Dir(exePreferred)) != nil {
@@ -70,12 +71,12 @@ func Install(uninstall bool) error {
 	defer os.Remove(tmp)
 	// A broken sudoers file locks everyone out of sudo, so only move it into place once it parses.
 	if out, err := exec.Command("/usr/sbin/visudo", "-cf", tmp).CombinedOutput(); err != nil {
-		return fmt.Errorf("sudoers rule rejected, nothing installed: %s", strings.TrimSpace(string(out)))
+		return fmt.Errorf(i18n.T("sudoers rule rejected, nothing installed: %s"), strings.TrimSpace(string(out)))
 	}
 	if err := os.Rename(tmp, sudoersPath); err != nil {
 		return err
 	}
-	fmt.Printf("installed %s and %s.\nStart the tray with `net-merge tray` (no password), and at sign-in with `net-merge autostart on`.\n", exe, sudoersPath)
+	fmt.Printf(i18n.T("installed %s and %s.\nStart the tray with `net-merge tray` (no password), and at sign-in with `net-merge autostart on`.\n"), exe, sudoersPath)
 	return nil
 }
 
@@ -87,7 +88,7 @@ func rootOnly(dir string) error {
 			return err
 		}
 		if st, ok := fi.Sys().(*syscall.Stat_t); !ok || st.Uid != 0 || fi.Mode().Perm()&0o022 != 0 {
-			return fmt.Errorf("%s is writable by non-root users; refusing to install a root-run binary there", d)
+			return fmt.Errorf(i18n.T("%s is writable by non-root users; refusing to install a root-run binary there"), d)
 		}
 	}
 	return nil

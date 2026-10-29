@@ -1,0 +1,43 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+  <string name="app_name">net-merge · Iraq PC Community</string>
+  <string name="channel_name">استهلاك الاتصالات</string>
+  <string name="notif_title">net-merge يعمل</string>
+  <string name="notif_waiting">بانتظار اتصال…</string>
+  <string name="stop">إيقاف مؤقت</string>
+  <string name="vpn_denied">يلزم منح إذن الشبكة الافتراضية لتمرير البيانات.</string>
+  <string name="active">يعمل</string>
+  <string name="paused">متوقف مؤقتًا</string>
+  <string name="starting">جارٍ البدء…</string>
+  <string name="resume">استئناف</string>
+  <string name="limits">حد الاستخدام</string>
+  <string name="speed">حد السرعة (Mbps، لكل اتجاه)</string>
+  <string name="allowance">حصة البيانات (GB)</string>
+  <string name="unlimited">غير محدود</string>
+  <string name="used_start">المستخدم منذ البدء: %1$s</string>
+  <string name="total_used">إجمالي المستخدم منذ البدء: %1$s</string>
+  <string name="used_allowance">الاستخدام الكلي: %1$s</string>
+  <string name="remaining">المتبقي: %1$s</string>
+  <string name="exhausted">نفدت حصص البيانات</string>
+  <string name="reset">تصفير استهلاك الحصة</string>
+  <string name="reset_confirm">هل تريد تصفير استهلاك حصة هذا الاتصال؟ لن يتغير استهلاك الجلسة.</string>
+  <string name="save">حفظ</string>
+  <string name="cancel">إلغاء</string>
+  <string name="confirm">تصفير</string>
+  <string name="reset_all">تصفير الحدود وإعادة فحص الاتصالات</string>
+  <string name="reset_all_confirm">سيؤدي ذلك إلى إزالة حدود السرعة وحصص البيانات، وتصفير الاستخدام المسجل للحصص، وإغلاق الاتصالات النشطة، ثم فحص الشبكات المتاحة مجددًا. سيبقى استخدام الجلسة كما هو.</string>
+  <string name="error">تعذر إكمال العملية. تفاصيل الخطأ الأصلية:</string>
+  <string name="scope">تشمل الحصص الرفع والتنزيل اللذين يمرران عبر net-merge أثناء تشغيله، ولا تمثل فاتورة مزود الخدمة. يُحفظ الاستهلاك كل ثانية؛ وقد تؤثر البيانات المخزنة مؤقتًا وآخر نقطة حفظ غير مكتوبة في دقة الحد.</string>
+  <string name="disconnected">غير متصل</string>
+  <string name="language">اللغة</string>
+  <string name="community">Rebranded for Iraq PC Community on Facebook</string>
+  <string name="credits">ترخيص MIT. مبني على net-merge من Rohit Mahto ونسخة أندرويد من SenseiRedsmoke.</string>
+  <string name="connection">الاتصال</string>
+  <string name="checking">جارٍ التحقق…</string>
+  <string name="up">متصل</string>
+  <string name="no_internet">لا يوجد إنترنت</string>
+  <string name="link">https://www.facebook.com/groups/1088749137864406/</string>
+  <string name="wifi">واي فاي</string>
+  <string name="mobile_data">البيانات</string>
+  <string name="community_banner">Iraq PC Community</string>
+</resources>

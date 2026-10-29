@@ -4,3 +4,7 @@ dist/
 result
 *.syso
 .DS_Store
+mobile/ios/Frameworks/
+mobile/ios/build/
+mobile/ios/*.xcodeproj/
+.release-signing/

@@ -476,19 +476,24 @@ func TestUpdateAddsAndKeepsCounters(t *testing.T) {
 	}
 }
 
-func TestUpdateDropsVanishedWhenIdle(t *testing.T) {
+func TestUpdateRetainsVanishedUsage(t *testing.T) {
 	s := NewScheduler([]nics.Nic{nic("A", "10.0.0.1", 1), nic("B", "10.0.0.2", 1)})
 	busy := s.Acquire(nil)
+	busy.account(Fam4, true, 1000)
 	s.Update(nil)
-	if len(s.Snapshot()) != 1 {
-		t.Fatalf("idle NIC should be dropped, busy one kept: %+v", s.Snapshot())
+	if len(s.Snapshot()) != 2 {
+		t.Fatal("departed adapters must retain session counters")
 	}
 	if s.Acquire(nil) != nil {
 		t.Fatal("vanished NIC must not get new flows")
 	}
 	s.Release(busy)
 	s.Update(nil)
-	if len(s.Snapshot()) != 0 {
-		t.Fatal("NIC should be dropped once idle")
+	var total int64
+	for _, st := range s.Snapshot() {
+		total += st.SessionBytes
+	}
+	if total != 1000 {
+		t.Fatalf("lost session bytes: %d", total)
 	}
 }

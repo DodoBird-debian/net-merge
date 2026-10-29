@@ -5,9 +5,9 @@ platform: linux
 version: ${VERSION}
 section: net
 priority: optional
-maintainer: Rohit Mahto <rohit@champdev.me>
-vendor: Rohit Mahto
-homepage: https://net-merge.org
+maintainer: Iraq PC Community <noreply@github.com>
+vendor: Iraq PC Community (based on net-merge by Rohit Mahto)
+homepage: https://github.com/DodoBird-debian/net-merge
 license: MIT
 description: |
   Use all your network adapters at once.

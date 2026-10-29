@@ -2,6 +2,7 @@ package platform
 
 import (
 	"fmt"
+	"net-merge/internal/i18n"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -50,18 +51,18 @@ func Autostart(action string) error {
 		if AutostartEnabled() {
 			fmt.Println("autostart is ON (" + path + ").")
 		} else {
-			fmt.Println("autostart is OFF.")
+			fmt.Println(i18n.T("autostart is OFF."))
 		}
 		return nil
 	case "off":
 		if !AutostartEnabled() {
-			fmt.Println("autostart is already OFF.")
+			fmt.Println(i18n.T("autostart is already OFF."))
 			return nil
 		}
 		if err := SetAutostart(false); err != nil {
 			return err
 		}
-		fmt.Println("autostart is OFF.")
+		fmt.Println(i18n.T("autostart is OFF."))
 		return nil
 	}
 	if err := SetAutostart(true); err != nil {
@@ -69,7 +70,7 @@ func Autostart(action string) error {
 	}
 	fmt.Println("autostart is ON: net-merge starts at sign-in (" + path + ").")
 	if !IsAdmin() {
-		fmt.Println("note: the tray needs CAP_NET_ADMIN to start merging; see `net-merge tray` or the README.")
+		fmt.Println(i18n.T("note: the tray needs CAP_NET_ADMIN to start merging; see `net-merge tray` or the README."))
 	}
 	return nil
 }

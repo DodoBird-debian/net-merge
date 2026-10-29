@@ -3,6 +3,7 @@ package platform
 import (
 	"encoding/binary"
 	"fmt"
+	"net-merge/internal/i18n"
 	"os"
 	"path/filepath"
 	"strings"
@@ -64,9 +65,9 @@ func utf16le(s string) []byte {
 func Autostart(action string) error {
 	if action == "status" {
 		if AutostartEnabled() {
-			fmt.Println("autostart is ON (starts at sign-in, no UAC prompt).")
+			fmt.Println(i18n.T("autostart is ON (starts at sign-in, no UAC prompt)."))
 		} else {
-			fmt.Println("autostart is OFF.")
+			fmt.Println(i18n.T("autostart is OFF."))
 		}
 		return nil
 	}
@@ -75,19 +76,19 @@ func Autostart(action string) error {
 	}
 	if action == "off" {
 		if !AutostartEnabled() {
-			fmt.Println("autostart is already OFF.")
+			fmt.Println(i18n.T("autostart is already OFF."))
 			return nil
 		}
 		if err := SetAutostart(false); err != nil {
 			return err
 		}
-		fmt.Println("autostart is OFF.")
+		fmt.Println(i18n.T("autostart is OFF."))
 		return nil
 	}
 	if err := SetAutostart(true); err != nil {
 		return err
 	}
-	fmt.Println("autostart is ON: net-merge starts at sign-in without a UAC prompt.")
+	fmt.Println(i18n.T("autostart is ON: net-merge starts at sign-in without a UAC prompt."))
 	return nil
 }
 
@@ -124,5 +125,9 @@ func HasConsole() bool {
 func ShowError(msg string) {
 	t, _ := windows.UTF16PtrFromString(msg)
 	c, _ := windows.UTF16PtrFromString("net-merge")
-	windows.MessageBox(0, t, c, windows.MB_OK|windows.MB_ICONERROR)
+	flags := uint32(windows.MB_OK | windows.MB_ICONERROR)
+	if i18n.RTL() {
+		flags |= 0x180000
+	}
+	windows.MessageBox(0, t, c, flags)
 }

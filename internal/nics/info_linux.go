@@ -3,6 +3,7 @@ package nics
 import (
 	"fmt"
 	"net"
+	"net-merge/internal/i18n"
 	"os"
 	"path/filepath"
 	"strings"
@@ -40,7 +41,7 @@ func adapterInfos() (map[int]adapterInfo, error) {
 			if t, err := os.ReadFile(filepath.Join(sys, "type")); err == nil {
 				kind += " type " + strings.TrimSpace(string(t))
 			}
-			info.virtual = fmt.Sprintf("tunnel/virtual interface (%s, no hardware device)", kind)
+			info.virtual = fmt.Sprintf(i18n.T("tunnel/virtual interface (%s, no hardware device)"), kind)
 		}
 		m[ifc.Index] = info
 	}

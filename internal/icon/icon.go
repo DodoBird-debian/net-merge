@@ -1,9 +1,10 @@
-// Package icon draws the tray icon.
+// Package icon draws the tray icon and prepares the branded application icon.
 package icon
 
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"image"
 	"image/color"
 	"image/png"
@@ -56,6 +57,32 @@ func ICO(on bool) []byte {
 	binary.Write(&ico, binary.LittleEndian, uint32(22)) // image offset: 6 + 16
 	ico.Write(p)
 	return ico.Bytes()
+}
+
+// ICOFromPNG wraps a PNG application icon in an ICO container for Windows.
+func ICOFromPNG(p []byte) ([]byte, error) {
+	config, err := png.DecodeConfig(bytes.NewReader(p))
+	if err != nil {
+		return nil, err
+	}
+	if config.Width < 1 || config.Height < 1 || config.Width > 256 || config.Height > 256 {
+		return nil, fmt.Errorf("application icon dimensions must be between 1 and 256 pixels")
+	}
+	var ico bytes.Buffer
+	binary.Write(&ico, binary.LittleEndian, [3]uint16{0, 1, 1})
+	width, height := byte(config.Width), byte(config.Height)
+	if config.Width == 256 {
+		width = 0
+	}
+	if config.Height == 256 {
+		height = 0
+	}
+	ico.Write([]byte{width, height, 0, 0})
+	binary.Write(&ico, binary.LittleEndian, [2]uint16{1, 32})
+	binary.Write(&ico, binary.LittleEndian, uint32(len(p)))
+	binary.Write(&ico, binary.LittleEndian, uint32(22))
+	ico.Write(p)
+	return ico.Bytes(), nil
 }
 
 func clamp01(v float64) float64 { return math.Max(0, math.Min(1, v)) }

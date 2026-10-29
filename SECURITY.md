@@ -6,15 +6,16 @@ Please **do not open a public issue** for a security problem.
 
 Report it privately instead:
 
-- Use **Report a vulnerability** on the repository's [Security tab](https://github.com/net-merge/net-merge/security/advisories/new), or
-- email **hello@net-merge.org**.
+- Use **Report a vulnerability** on this fork's [Security tab](https://github.com/DodoBird-debian/net-merge/security/advisories/new).
 
-Please include what you found, the steps to reproduce it, and your OS and `net-merge version`. I will
-answer as soon as I can and credit you in the fix if you want.
+If private reporting is unavailable, ask the fork maintainer for a private contact method without
+including vulnerability details in a public post. The upstream project does not maintain this fork.
+
+Please include what you found, the steps to reproduce it, and your OS and `net-merge version`.
 
 ## Supported versions
 
-Only the [latest release](https://github.com/net-merge/net-merge/releases/latest) gets fixes.
+Only the [latest community release](https://github.com/DodoBird-debian/net-merge/releases/latest) gets fixes.
 
 ## What matters most
 

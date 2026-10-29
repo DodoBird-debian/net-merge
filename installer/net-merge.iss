@@ -38,10 +38,30 @@ UsedUserAreasWarning=no
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
+Name: "arabic"; MessagesFile: "compiler:Languages\Arabic.isl"
+
+[CustomMessages]
+english.StartOnLogin=Start net-merge when I sign in (no UAC prompt)
+arabic.StartOnLogin=تشغيل net-merge عند تسجيل الدخول (دون طلب صلاحيات المسؤول)
+english.Startup=Startup:
+arabic.Startup=بدء التشغيل:
+english.DesktopShortcut=Create a &desktop shortcut
+arabic.DesktopShortcut=إنشاء اختصار على &سطح المكتب
+english.Shortcuts=Shortcuts:
+arabic.Shortcuts=الاختصارات:
+english.AppDescription=Use all your network adapters at once
+arabic.AppDescription=استخدام جميع اتصالات الإنترنت في الوقت نفسه
+english.EnableAutostart=Enabling start at sign-in...
+arabic.EnableAutostart=جارٍ تفعيل التشغيل عند تسجيل الدخول...
+english.StartNow=Start net-merge now
+arabic.StartNow=تشغيل net-merge الآن
+
+[LangOptions]
+arabic.RightToLeft=yes
 
 [Tasks]
-Name: "autostart"; Description: "Start net-merge when I sign in (no UAC prompt)"; GroupDescription: "Startup:"; Flags: unchecked
-Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Shortcuts:"; Flags: unchecked
+Name: "autostart"; Description: "{cm:StartOnLogin}"; GroupDescription: "{cm:Startup}"; Flags: unchecked
+Name: "desktopicon"; Description: "{cm:DesktopShortcut}"; GroupDescription: "{cm:Shortcuts}"; Flags: unchecked
 
 [Files]
 Source: "dist\net-merge.exe"; DestDir: "{app}"; Flags: ignoreversion
@@ -54,13 +74,13 @@ Source: "THIRD-PARTY-NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "README.md"; DestDir: "{app}"; Flags: ignoreversion isreadme
 
 [Icons]
-Name: "{autoprograms}\net-merge"; Filename: "{app}\net-merge-tray.exe"; IconFilename: "{app}\net-merge.ico"; Comment: "Use all your network adapters at once"
+Name: "{autoprograms}\net-merge"; Filename: "{app}\net-merge-tray.exe"; IconFilename: "{app}\net-merge.ico"; Comment: "{cm:AppDescription}"
 Name: "{autodesktop}\net-merge"; Filename: "{app}\net-merge-tray.exe"; IconFilename: "{app}\net-merge.ico"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\net-merge.exe"; Parameters: "autostart on"; Flags: runhidden; Tasks: autostart; StatusMsg: "Enabling start at sign-in..."
+Filename: "{app}\net-merge.exe"; Parameters: "autostart on"; Flags: runhidden; Tasks: autostart; StatusMsg: "{cm:EnableAutostart}"
 ; The installer is already elevated, so the tray starts without a second UAC prompt.
-Filename: "{app}\net-merge-tray.exe"; Description: "Start net-merge now"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\net-merge-tray.exe"; Description: "{cm:StartNow}"; Flags: nowait postinstall skipifsilent
 
 [UninstallRun]
 Filename: "{app}\net-merge.exe"; Parameters: "autostart off"; Flags: runhidden; RunOnceId: "AutostartOff"
