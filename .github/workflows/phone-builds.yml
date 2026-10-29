@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: ['codex/**']
-    paths: ['mobile/**', '.github/workflows/phone-builds.yml']
+    paths: ['mobile/**', 'scripts/android-smoke.py', 'scripts/check-mobile-catalogs.py', '.github/workflows/phone-builds.yml']
   workflow_call:
     inputs:
       version:
