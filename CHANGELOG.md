@@ -3,6 +3,15 @@
 What changed in each release. Each version's section becomes its GitHub release notes, so add the
 entry here before pushing a version tag.
 
+## Unreleased
+
+### Fixed
+- Incorporated upstream's SOCKS5 request validation in the desktop and phone relay engines:
+  invalid reserved bytes are rejected, and unsupported commands receive a response without
+  waiting for a destination. The upstream regression tests run in both modules.
+- Kept the Linux cross-architecture CI runner on Ubuntu 24.04 so its QEMU dependency remains
+  installable.
+
 ## [0.4.1] - 2026-10-25
 
 ### Fixed
