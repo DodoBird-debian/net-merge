@@ -78,7 +78,11 @@ The tray requires StatusNotifierItem/AppIndicator support on Linux.
 macOS uses a universal binary with an ad-hoc signature. It is not Apple notarized. The installer
 runs `net-merge install` with admin permission to configure system-wide access.
 
-Android requires VPN consent and cannot operate alongside another VPN. The unsigned iOS build
+Android requires VPN consent and cannot operate alongside another VPN. Like the desktop app,
+each individual connection stays on one network; a Play Store download, one browser download,
+or a single video stream usually will not get faster. Apps using many connections (such as web
+pages and multi-part download managers) can benefit from combining links. Mobile data stays on
+while net-merge runs, so check your carrier's own billing counter for plan usage. The unsigned iOS build
 includes the app and packet-tunnel extension; both require signing and appropriate Network
 Extension and App Group provisioning before use. The phone ports have not been validated with
 two real phone connections; iOS is experimental. CI build and emulator results do not establish
@@ -99,3 +103,6 @@ Based on [net-merge by Rohit Mahto](https://github.com/net-merge/net-merge) and 
 Rebranded for [Iraq PC Community on Facebook](https://www.facebook.com/groups/1088749137864406/).
 The original [MIT license](LICENSE), Android [MIT license](mobile/android/LICENSE), and
 [third-party notices](THIRD-PARTY-NOTICES.md) are retained.
+
+The original developer also publishes [RoutEngine](https://routengine.net/) for per-app routing
+([preview](docs/routengine-overview.png)) and [DormHost](https://dormhost.dev/) for project hosting.

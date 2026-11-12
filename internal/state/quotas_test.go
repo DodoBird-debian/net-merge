@@ -28,6 +28,28 @@ func TestQuotaFileRoundTripAndCorruption(t *testing.T) {
 		}
 	}
 }
+
+func TestSaveQuotasWhileFileIsOpen(t *testing.T) {
+	dir := t.TempDir()
+	first := map[string]engine.QuotaRecord{"stable-id": {Name: "Wi-Fi", LimitBytes: 1e9, UsedBytes: 100}}
+	if err := SaveQuotas(dir, first); err != nil {
+		t.Fatal(err)
+	}
+	reader, err := os.Open(QuotasPath(dir))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reader.Close()
+	time.AfterFunc(100*time.Millisecond, func() { _ = reader.Close() })
+	next := map[string]engine.QuotaRecord{"stable-id": {Name: "Wi-Fi", LimitBytes: 1e9, UsedBytes: 200}}
+	if err := SaveQuotas(dir, next); err != nil {
+		t.Fatalf("SaveQuotas while a reader has the file open: %v", err)
+	}
+	got, err := LoadQuotas(dir)
+	if err != nil || got["stable-id"] != next["stable-id"] {
+		t.Fatalf("got %v, %v; want %v", got, err, next)
+	}
+}
 func TestQuotaRequestsValidateUntrustedInput(t *testing.T) {
 	dir := t.TempDir()
 	os.MkdirAll(filepath.Join(dir, "ctl"), 0755)

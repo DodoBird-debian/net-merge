@@ -3,6 +3,16 @@
 What changed in each release. Each version's section becomes its GitHub release notes, so add the
 entry here before pushing a version tag.
 
+## [Unreleased]
+
+### Fixed
+- Integrated upstream 0.3.7's Windows retry for saving speed limits while a CLI reader has
+  `limits.json` open. The same retry now covers the community allowance file, so a reader cannot
+  intermittently prevent a quota checkpoint or manual reset from being saved.
+
+### Documentation
+- Clarified upstream's Android single-connection speed limitation in the community README.
+
 ## [0.4.2] - 2026-10-29
 
 ### Changed

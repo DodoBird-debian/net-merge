@@ -95,7 +95,7 @@ func AtomicWrite(path string, b []byte, mode os.FileMode) error {
 	if closeErr != nil {
 		return closeErr
 	}
-	return os.Rename(f.Name(), path)
+	return replaceFile(f.Name(), path)
 }
 
 // Checkpoint every second and immediately when a link exhausts its allowance.
