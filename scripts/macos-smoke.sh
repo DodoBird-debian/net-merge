@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Smoke test of system-wide mode on macOS (CI runs it on macos-latest). Needs sudo and internet
+# Smoke test of system-wide mode on macOS (CI runs it on macos-15-intel). Needs sudo and internet
 # access. The runner has one NIC, so this checks the TUN, routes, relaying, off and crash safety,
 # not balancing (that needs a second uplink: plug in a tether and watch `net-merge status`).
 #
@@ -21,7 +21,12 @@ wait_on() { # wait until `net-merge status` reports ON
     done
     return 1
 }
-http() { curl -4 -s --max-time 10 -o /dev/null -w '%{http_code}' https://example.com; }
+http() { curl -4 -sS --max-time 10 -o /dev/null -w '%{http_code}' https://example.com; }
+show_routes() {
+    echo "IPv4 routes ($1):"
+    netstat -rn -f inet | grep -E '^(default|0/1|128\.0/1) ' || true
+    route -n get 1.1.1.1 | grep -E '(gateway:|interface:|flags:)' || true
+}
 captured() { netstat -rn -f inet | grep -cE '^(0/1|128.0/1) '; }
 scoped_defaults() { netstat -rn -f inet | grep -E '^default' | grep -cE 'UG[A-Za-z]*I'; }
 
@@ -51,6 +56,7 @@ relayed=$(jq '[.NICs[].Total] | add' /var/run/net-merge/status.json 2>/dev/null 
 echo "== the primary adapter stops being primary: its scoped default must stay"
 read -r gw nic < <(netstat -rn -f inet | awk '$1 == "default" && $3 !~ /I/ {print $2, $4; exit}')
 sudo route -q -n delete default "$gw"
+show_routes "after removing primary default"
 sleep 5 # more than one 3 s sync
 netstat -rn -f inet | grep -E "^default .*I.* $nic" >/dev/null &&
     pass "$nic keeps a scoped default after it stops being primary" || fail "$nic lost its default route when it stopped being primary"
@@ -58,12 +64,14 @@ netstat -rn -f inet | grep -E "^default .*I.* $nic" >/dev/null &&
 # and back: macOS replaces the scoped default with an unscoped one, net-merge adds its own again
 sudo route -q -n delete default "$gw" -ifscope "$nic"
 sudo route -q -n add default "$gw"
+show_routes "after restoring primary default"
 sleep 5
 netstat -rn -f inet | grep -E "^default .*I.* $nic" >/dev/null &&
     pass "net-merge scoped $nic again once it was primary again" || fail "no scoped default on $nic after it became primary again"
 
 echo "== off: adapter, routes and scoped defaults go away, internet still works"
 "$BIN" off -state-dir "$STATE"
+show_routes "after turning off"
 sleep 1
 [ "$(captured)" = 0 ] && pass "capture routes removed" || fail "capture routes still present"
 [ "$(scoped_defaults)" = 0 ] && pass "scoped default routes removed" || fail "scoped default routes left behind"
