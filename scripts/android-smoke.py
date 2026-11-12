@@ -12,8 +12,12 @@ out = Path('phone-screenshots'); out.mkdir(exist_ok=True)
 def adb(*args, binary=False):
     return subprocess.check_output(['adb', *args], text=not binary)
 def dump():
-    adb('shell','uiautomator','dump','/sdcard/window.xml')
-    return ET.fromstring(adb('exec-out','cat','/sdcard/window.xml'))
+    for _ in range(10):
+        result = adb('shell','uiautomator','dump','/sdcard/window.xml')
+        if 'dumped to:' in result:
+            return ET.fromstring(adb('exec-out','cat','/sdcard/window.xml'))
+        time.sleep(1)
+    raise AssertionError('Could not obtain a fresh UI hierarchy')
 def text(root):
     return ' '.join(n.get('text','')+' '+n.get('content-desc','') for n in root.iter())
 def expect(phrase):
@@ -73,6 +77,7 @@ assert records['version'] == 1 and records['adapters'], state
 for name in ('واي فاي', 'البيانات'):
     open_limits(name)
     root = expect('حد السرعة')
+    assert name in text(root), f'Opened the wrong connection settings: {name}: {text(root)}'
     boxes=[n for n in root.iter() if n.get('checkable') == 'true']
     assert len(boxes) == 2, ET.tostring(root,encoding='unicode')
     for box in boxes: tap_node(box)
