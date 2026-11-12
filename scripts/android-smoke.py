@@ -77,6 +77,8 @@ assert records['version'] == 1 and records['adapters'], state
 for name in ('واي فاي', 'البيانات'):
     open_limits(name)
     root = expect('حد السرعة')
+    print('Settings hierarchy for', name, ET.tostring(root, encoding='unicode'), flush=True)
+    shot('android-dialog-' + ('wifi' if name == 'واي فاي' else 'mobile'))
     assert name in text(root), f'Opened the wrong connection settings: {name}: {text(root)}'
     boxes=[n for n in root.iter() if n.get('checkable') == 'true']
     assert len(boxes) == 2, ET.tostring(root,encoding='unicode')
@@ -87,6 +89,7 @@ for name in ('واي فاي', 'البيانات'):
     tap_node(fields[1]); adb('shell','input','text','0.000000001')
     tap_text(dump(),'حفظ')
     time.sleep(2)
+    print('Saved allowances after', name, adb('exec-out','run-as',pkg,'cat','files/quotas.json'), flush=True)
 state=adb('exec-out','run-as',pkg,'cat','files/quotas.json')
 records=json.loads(state)
 assert all(v['limit_bytes']==1 and v['used_bytes']>=1 for v in records['adapters'].values()), state
