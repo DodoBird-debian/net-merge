@@ -3,7 +3,7 @@
 What changed in each release. Each version's section becomes its GitHub release notes, so add the
 entry here before pushing a version tag.
 
-## [Unreleased]
+## [0.4.3] - 2026-11-12
 
 ### Fixed
 - Integrated upstream 0.3.7's Windows retry for saving speed limits while a CLI reader has

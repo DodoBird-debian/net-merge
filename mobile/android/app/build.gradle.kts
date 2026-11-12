@@ -10,7 +10,7 @@ android {
     namespace = "org.netmerge.android"
     compileSdk = 36
 
-    val appVersion = System.getenv("APP_VERSION") ?: "0.4.2"
+    val appVersion = System.getenv("APP_VERSION") ?: "0.4.3"
     val parts = appVersion.split('.').map { it.toInt() }
     defaultConfig {
         applicationId = "org.iraqpc.netmerge"
