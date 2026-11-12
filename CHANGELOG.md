@@ -9,6 +9,8 @@ entry here before pushing a version tag.
 - Integrated upstream 0.3.7's Windows retry for saving speed limits while a CLI reader has
   `limits.json` open. The same retry now covers the community allowance file, so a reader cannot
   intermittently prevent a quota checkpoint or manual reset from being saved.
+- Use GitHub's Intel macOS runner pool for desktop, iOS, and release validation after hosted
+  arm64 runner capacity prevented the macOS jobs from starting.
 
 ### Documentation
 - Clarified upstream's Android single-connection speed limitation in the community README.

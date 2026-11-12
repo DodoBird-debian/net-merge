@@ -75,7 +75,7 @@ jobs:
     needs: version
     env:
       APP_VERSION: ${{ needs.version.outputs.value }}
-    runs-on: macos-latest
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
